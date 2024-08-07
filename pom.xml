@@ -15,6 +15,18 @@
     </properties>
 
     <dependencies>
+        <!-- BouncyCastle Provider -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
+        <!-- BouncyCastle PKIX -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
         <dependency>
             <groupId>it.unisa.dia.gas</groupId>
             <artifactId>jpbc-api</artifactId>
