@@ -11,8 +11,11 @@ import java.util.Map;
 
 public class SetupAlgorithm {
 
-    public static void main(String[] args) {
+    public static SetupParams initializeSetup() {
         long startTime, endTime;
+        long originTime, exitTime;
+
+        originTime = System.currentTimeMillis();
 
         // 步骤1：生成安全参数
         startTime = System.currentTimeMillis();
@@ -71,30 +74,36 @@ public class SetupAlgorithm {
         endTime = System.currentTimeMillis();
         System.out.println("协商trapdoor和计算向量时间: " + (endTime - startTime) + "毫秒");
 
-        // 步骤4：写入创世区块
-//        startTime = System.currentTimeMillis();
-//        GenesisBlock genesisBlock = new GenesisBlock(params, spk, inf, V1, V2);
-//        endTime = System.currentTimeMillis();
-//        System.out.println("写入创世区块时间: " + (endTime - startTime) + "毫秒");
+        exitTime = System.currentTimeMillis();
+        System.out.println("设置算法成功完成。设置算法总时间为："+ (exitTime - originTime) + "毫秒");
 
-        System.out.println("设置算法成功完成。");
+        return new SetupParams(params, pairing, G1, G2, GT, g, g1, g2, eta, sk, inf, spk, V1, V2);
+    }
+
+    public static class SetupParams {
+        public PairingParameters params;
+        public Pairing pairing;
+        public Field G1, G2, GT;
+        public Element g, g1, g2, eta;
+        public Map<Integer, Element> sk, inf;
+        public Element spk;
+        public Element[] V1, V2;
+
+        public SetupParams(PairingParameters params, Pairing pairing, Field G1, Field G2, Field GT, Element g, Element g1, Element g2, Element eta, Map<Integer, Element> sk, Map<Integer, Element> inf, Element spk, Element[] V1, Element[] V2) {
+            this.params = params;
+            this.pairing = pairing;
+            this.G1 = G1;
+            this.G2 = G2;
+            this.GT = GT;
+            this.g = g;
+            this.g1 = g1;
+            this.g2 = g2;
+            this.eta = eta;
+            this.sk = sk;
+            this.inf = inf;
+            this.spk = spk;
+            this.V1 = V1;
+            this.V2 = V2;
+        }
     }
 }
-
-//class GenesisBlock {
-//    PairingParameters params;
-//    Element spk;
-//    Map<Integer, Element> inf;
-//    Element[] V1;
-//    Element[] V2;
-//
-//    public GenesisBlock(PairingParameters params, Element spk, Map<Integer, Element> inf, Element[] V1, Element[] V2) {
-//        this.params = params;
-//        this.spk = spk;
-//        this.inf = inf;
-//        this.V1 = V1;
-//        this.V2 = V2;
-//    }
-//
-//    // 可以在此处添加处理创世区块逻辑（例如序列化）的其他方法
-//}

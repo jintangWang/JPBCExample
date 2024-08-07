@@ -1,10 +1,9 @@
 package com.example;
 
+import com.example.SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
-import it.unisa.dia.gas.jpbc.PairingParameters;
 import it.unisa.dia.gas.jpbc.Field;
-import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,31 +16,31 @@ public class RegistrationAlgorithm {
 
     public static void main(String[] args) {
         // 初始化配对参数
-        initializeSetup();
+        SetupParams setupParams = SetupAlgorithm.initializeSetup();
+        initializeSetupParams(setupParams);
 
-        // 证书发行者注册
+        long originTime, exitTime;
+        originTime = System.currentTimeMillis();
+
+        // 注册证书发行者
         registerCredentialIssuer();
 
-        // 证书审核员注册
+        // 注册证书审核员
         registerCredentialAuditor();
+
+        exitTime = System.currentTimeMillis();
+        System.out.println("注册算法成功完成。注册算法总时间为："+ (exitTime - originTime) + "毫秒");
     }
 
-    private static void initializeSetup() {
-        long startTime, endTime;
-
-        // 读取配对参数
-        startTime = System.currentTimeMillis();
-        PairingParameters params = PairingFactory.getPairingParameters("params/a.properties");
-        pairing = PairingFactory.getPairing(params);
-        G1 = pairing.getG1();
-        G2 = pairing.getG2();
+    private static void initializeSetupParams(SetupParams setupParams) {
+        pairing = setupParams.pairing;
+        G1 = setupParams.G1;
+        G2 = setupParams.G2;
         Zp = pairing.getZr();
-        g = G1.newRandomElement().getImmutable();
-        g1 = G1.newRandomElement().getImmutable();
-        g2 = G2.newRandomElement().getImmutable();
-        eta = pairing.getGT().newRandomElement().getImmutable();
-        endTime = System.currentTimeMillis();
-        System.out.println("初始化配对参数时间: " + (endTime - startTime) + "毫秒");
+        g = setupParams.g;
+        g1 = setupParams.g1;
+        g2 = setupParams.g2;
+        eta = setupParams.eta;
     }
 
     private static void registerCredentialIssuer() {
@@ -96,16 +95,16 @@ public class RegistrationAlgorithm {
     }
 
     private static void publishToBlockchain(String description, Map<String, Element> elements) {
-        System.out.println(description + ":");
-        elements.forEach((key, value) -> System.out.println(key + " = " + value));
+//        System.out.println(description + ":");
+//        elements.forEach((key, value) -> System.out.println(key + " = " + value));
     }
 
     private static void publishZKProof(String description, Element[] secrets, Element[] publicKeys) {
-        System.out.println(description + ":");
-        // 这里我们假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
+//        System.out.println(description + ":");
+        // 这里假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
         for (int i = 0; i < secrets.length; i++) {
-            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
-            System.out.println("Public Key " + (i + 1) + " = " + publicKeys[i]);
+//            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
+//            System.out.println("Public Key " + (i + 1) + " = " + publicKeys[i]);
         }
     }
 }
