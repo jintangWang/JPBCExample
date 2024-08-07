@@ -13,17 +13,20 @@ public class RegistrationAlgorithm {
     private static Pairing pairing;
     private static Field G1, G2, Zp;
     private static Element g, g1, g2, eta;
+    private static Map<String, Map<String, Element>> ipkMap = new HashMap<>();
+    private static Element apk;
 
     public static void main(String[] args) {
         // 初始化配对参数
-        SetupParams setupParams = SetupAlgorithm.initializeSetup();
+        SetupParams setupParams = SetupAlgorithm.getInstance();
         initializeSetupParams(setupParams);
 
         long originTime, exitTime;
         originTime = System.currentTimeMillis();
-
         // 注册证书发行者
-        registerCredentialIssuer();
+        registerCredentialIssuer("CI1");
+        registerCredentialIssuer("CI2");
+        registerCredentialIssuer("CI3");
 
         // 注册证书审核员
         registerCredentialAuditor();
@@ -32,7 +35,7 @@ public class RegistrationAlgorithm {
         System.out.println("注册算法成功完成。注册算法总时间为："+ (exitTime - originTime) + "毫秒");
     }
 
-    private static void initializeSetupParams(SetupParams setupParams) {
+    public static void initializeSetupParams(SetupParams setupParams) {
         pairing = setupParams.pairing;
         G1 = setupParams.G1;
         G2 = setupParams.G2;
@@ -43,7 +46,7 @@ public class RegistrationAlgorithm {
         eta = setupParams.eta;
     }
 
-    private static void registerCredentialIssuer() {
+    private static void registerCredentialIssuer(String issuerName) {
         long startTime, endTime;
 
         // 生成证书发行者密钥对
@@ -65,15 +68,16 @@ public class RegistrationAlgorithm {
         ipk.put("Y2", Y2);
         ipk.put("Z1", Z1);
         ipk.put("Z2", Z2);
+        ipkMap.put(issuerName, ipk);  // 将所有公钥元素存储在 ipkMap 中
 
         // 发布公钥和零知识证明
-        publishToBlockchain("Credential Issuer Public Key", ipk);
+        publishToBlockchain(issuerName + " Public Key", ipk);
         Element[] isk = {x, y1, y2, z1, z2};
         Element[] ipkElements = {X, Y1, Y2, Z1, Z2};
-        publishZKProof("Credential Issuer ZK Proof", isk, ipkElements);
+        publishZKProof(issuerName + " ZK Proof", isk, ipkElements);
 
         endTime = System.currentTimeMillis();
-        System.out.println("证书发行者注册时间: " + (endTime - startTime) + "毫秒");
+        System.out.println(issuerName + " 注册时间: " + (endTime - startTime) + "毫秒");
     }
 
     private static void registerCredentialAuditor() {
@@ -82,7 +86,7 @@ public class RegistrationAlgorithm {
         // 生成证书审核员密钥对
         startTime = System.currentTimeMillis();
         Element u = Zp.newRandomElement().getImmutable();
-        Element apk = g.powZn(u).getImmutable();
+        apk = g.powZn(u).getImmutable();
 
         // 发布公钥和零知识证明
         Map<String, Element> auditorKey = new HashMap<>();
@@ -102,9 +106,17 @@ public class RegistrationAlgorithm {
     private static void publishZKProof(String description, Element[] secrets, Element[] publicKeys) {
 //        System.out.println(description + ":");
         // 这里假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
-        for (int i = 0; i < secrets.length; i++) {
+//        for (int i = 0; i < secrets.length; i++) {
 //            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
 //            System.out.println("Public Key " + (i + 1) + " = " + publicKeys[i]);
-        }
+//        }
+    }
+
+    public static Map<String, Map<String, Element>> getIpkMap() {
+        return ipkMap;
+    }
+
+    public static Element getApk() {
+        return apk;
     }
 }

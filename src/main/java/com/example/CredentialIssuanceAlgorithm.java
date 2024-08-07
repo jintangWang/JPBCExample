@@ -1,9 +1,8 @@
 package com.example;
 
+import com.example.SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
-import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
-import it.unisa.dia.gas.jpbc.PairingParameters;
 import it.unisa.dia.gas.jpbc.Field;
 
 import java.util.HashMap;
@@ -13,35 +12,42 @@ public class CredentialIssuanceAlgorithm {
 
     private static Pairing pairing;
     private static Field G1, G2, Zp;
-    private static Element g1, g2, eta;
+    private static Element g, g1, g2, eta;
+    private static Map<String, Map<String, Element>> ipkMap;
+    private static Element apk;
 
     public static void main(String[] args) {
         // 初始化配对参数
-        initializeSetup();
+        SetupParams setupParams = SetupAlgorithm.getInstance();
+        RegistrationAlgorithm.initializeSetupParams(setupParams);
+
+        // 注册服务实体
+        RegistrationAlgorithm.main(null);  // 调用 RegistrationAlgorithm 注册实体
+        ipkMap = RegistrationAlgorithm.getIpkMap();
+        apk = RegistrationAlgorithm.getApk();
+
+        // 初始化其他参数
+        initializeSetupParams(setupParams);
 
         // 用户注册和凭证颁发
         userRegistrationAndCredentialIssuance();
     }
 
-    private static void initializeSetup() {
-        long startTime, endTime;
-
-        // 读取配对参数
-        startTime = System.currentTimeMillis();
-        PairingParameters params = PairingFactory.getPairingParameters("params/a.properties");
-        pairing = PairingFactory.getPairing(params);
-        G1 = pairing.getG1();
-        G2 = pairing.getG2();
+    private static void initializeSetupParams(SetupParams setupParams) {
+        pairing = setupParams.pairing;
+        G1 = setupParams.G1;
+        G2 = setupParams.G2;
         Zp = pairing.getZr();
-        g1 = G1.newRandomElement().getImmutable();
-        g2 = G2.newRandomElement().getImmutable();
-        eta = pairing.getGT().newRandomElement().getImmutable();
-        endTime = System.currentTimeMillis();
-        System.out.println("初始化配对参数时间: " + (endTime - startTime) + "毫秒");
+        g = setupParams.g;
+        g1 = setupParams.g1;
+        g2 = setupParams.g2;
+        eta = setupParams.eta;
     }
 
     private static void userRegistrationAndCredentialIssuance() {
         long startTime, endTime;
+        long originTime, exitTime;
+        originTime = System.currentTimeMillis();
 
         // 步骤1：用户生成公私钥对
         startTime = System.currentTimeMillis();
@@ -104,7 +110,7 @@ public class CredentialIssuanceAlgorithm {
         // 生成凭证
         Element[] zkProofElements = (Element[]) requestData.get("upk");
         Element g1h = g1.powZn(h).getImmutable();
-        Element b = zkProofElements[0].powZn(zkProofSecrets[1]).mul(zkProofElements[1].powZn(zkProofSecrets[2])).getImmutable();
+        Element b = zkProofElements[0].powZn(zkProofSecrets[1]).mul(zkProofElements[1]).getImmutable();
         Element s = g1h.powZn(zkProofSecrets[0]).mul(M1.powZn(zkProofSecrets[1])).mul(M2.powZn(zkProofSecrets[2])).getImmutable();
 
         Map<String, Object> cred = new HashMap<>();
@@ -120,7 +126,7 @@ public class CredentialIssuanceAlgorithm {
         // 用户验证凭证
         startTime = System.currentTimeMillis();
         Element[] sigma = (Element[]) cred.get("sigma");
-        boolean credValid = verifyCredential(sigma, zkProofElements, M);
+        boolean credValid = verifyCredential(sigma, zkProofElements, M, N);
         if (credValid) {
             System.out.println("凭证验证成功");
             // 将凭证存储到用户的本地数据库中
@@ -129,6 +135,9 @@ public class CredentialIssuanceAlgorithm {
         }
         endTime = System.currentTimeMillis();
         System.out.println("用户验证凭证时间: " + (endTime - startTime) + "毫秒");
+
+        exitTime = System.currentTimeMillis();
+        System.out.println("用户注册与证书发放算法成功完成。用户注册与证书发放算法总时间为："+ (exitTime - originTime) + "毫秒");
     }
 
     private static Element computeF_A_alpha(String[] attributes) {
@@ -141,12 +150,14 @@ public class CredentialIssuanceAlgorithm {
     }
 
     private static void publishZKProof(String description, Element[] secrets, Element[] publicKeys) {
-        System.out.println(description + ":");
+//        System.out.println(description + ":");
         // 这里假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
-        for (int i = 0; i < secrets.length; i++) {
-            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
-            System.out.println("Public Key " + (i + 1) + " = " + publicKeys[i]);
-        }
+//        for (int i = 0; i < secrets.length; i++) {
+//            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
+//        }
+//        for (int i = 0; i < publicKeys.length; i++) {
+//            System.out.println("Public Key " + (i + 1) + " = " + publicKeys[i]);
+//        }
     }
 
     private static boolean verifyZKProof(Element[] secrets, Element[] publicKeys) {
@@ -154,8 +165,119 @@ public class CredentialIssuanceAlgorithm {
         return true;
     }
 
-    private static boolean verifyCredential(Element[] sigma, Element[] upk, Element[] M) {
-        // 假设凭证验证逻辑已经实现
-        return true;
+    private static boolean verifyCredential(Element[] sigma, Element[] upk, Element[] M, Element[] N) {
+        Element g1h = sigma[0];
+        Element b = sigma[1];
+        Element s = sigma[2];
+
+        // 检查所有元素是否为 null
+        if (g1h == null) {
+            System.out.println("g1h is null");
+        }
+        if (b == null) {
+            System.out.println("b is null");
+        }
+        if (s == null) {
+            System.out.println("s is null");
+        }
+        if (upk == null) {
+            System.out.println("upk is null");
+        } else {
+            if (upk[0] == null) {
+                System.out.println("upk[0] is null");
+            }
+            if (upk[1] == null) {
+                System.out.println("upk[1] is null");
+            }
+        }
+        if (M == null) {
+            System.out.println("M is null");
+        } else {
+            if (M[0] == null) {
+                System.out.println("M[0] is null");
+            }
+            if (M[1] == null) {
+                System.out.println("M[1] is null");
+            }
+        }
+        if (N == null) {
+            System.out.println("N is null");
+        } else {
+            if (N[0] == null) {
+                System.out.println("N[0] is null");
+            }
+            if (N[1] == null) {
+                System.out.println("N[1] is null");
+            }
+        }
+        // 假设ipkMap中存储的是发行者的公钥
+        Map<String, Element> issuerKeys = ipkMap.get("CI1");  // 假设CI1是其中一个发行者
+        if (issuerKeys == null) {
+            System.out.println("issuerKeys is null");
+            return false;
+        }
+        Element X = issuerKeys.get("X");
+        Element Y1 = issuerKeys.get("Y1");
+        Element Y2 = issuerKeys.get("Y2");
+        Element Z1 = issuerKeys.get("Z1");
+        Element Z2 = issuerKeys.get("Z2");
+
+        // 检查公钥是否为 null
+        if (X == null) {
+            System.out.println("X is null");
+        }
+        if (Y1 == null) {
+            System.out.println("Y1 is null");
+        }
+        if (Y2 == null) {
+            System.out.println("Y2 is null");
+        }
+        if (Z1 == null) {
+            System.out.println("Z1 is null");
+        }
+        if (Z2 == null) {
+            System.out.println("Z2 is null");
+        }
+
+        // 调试输出以检查中间值
+//        System.out.println("g1h: " + g1h);
+//        System.out.println("X: " + X);
+//        System.out.println("M[0]: " + M[0]);
+//        System.out.println("Y1: " + Y1);
+//        System.out.println("M[1]: " + M[1]);
+//        System.out.println("Y2: " + Y2);
+//        System.out.println("s: " + s);
+//        System.out.println("g2: " + g2);
+
+        Element pairing1 = pairing.pairing(g1h, X);
+        Element pairing2 = pairing.pairing(M[0], Y1);
+        Element pairing3 = pairing.pairing(M[1], Y2);
+        Element pairing4 = pairing.pairing(s, g2);
+
+//        System.out.println("pairing(g1h, X): " + pairing1);
+//        System.out.println("pairing(M[0], Y1): " + pairing2);
+//        System.out.println("pairing(M[1], Y2): " + pairing3);
+//        System.out.println("pairing(s, g2): " + pairing4);
+
+        boolean firstCheck = pairing1.mul(pairing2).mul(pairing3).isEqual(pairing4);
+
+        Element pairing5 = pairing.pairing(b, g2);
+        Element pairing6 = pairing.pairing(upk[0], Z1);
+        Element pairing7 = pairing.pairing(upk[1], Z2);
+
+//        System.out.println("pairing(b, g2): " + pairing5);
+//        System.out.println("pairing(upk[0], Z1): " + pairing6);
+//        System.out.println("pairing(upk[1], Z2): " + pairing7);
+
+        boolean secondCheck = pairing5.isEqual(pairing6.mul(pairing7));
+
+        boolean thirdCheck = pairing.pairing(upk[0], N[0]).isEqual(pairing.pairing(M[0], g2)) && pairing.pairing(upk[1], N[1]).isEqual(pairing.pairing(M[1], g2));
+
+        // 添加调试输出以检查检查结果
+//        System.out.println("firstCheck: " + firstCheck);
+//        System.out.println("secondCheck: " + secondCheck);
+//        System.out.println("thirdCheck: " + thirdCheck);
+
+        return firstCheck && secondCheck && thirdCheck;
     }
 }
