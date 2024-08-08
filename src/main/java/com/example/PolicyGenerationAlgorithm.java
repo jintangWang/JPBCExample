@@ -1,9 +1,8 @@
 package com.example;
 
+import com.example.SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
-import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
-import it.unisa.dia.gas.jpbc.PairingParameters;
 import it.unisa.dia.gas.jpbc.Field;
 
 import java.util.HashMap;
@@ -13,106 +12,95 @@ public class PolicyGenerationAlgorithm {
 
     private static Pairing pairing;
     private static Field G1, G2, Zp;
-    private static Element g1, g2, eta;
+    private static Element g, g1, g2, eta;
+    private static Map<String, Map<String, Element>> ipkMap;
+    private static Element apk;
 
     public static void main(String[] args) {
         // 初始化配对参数
-        initializeSetup();
+        SetupParams setupParams = SetupAlgorithm.getInstance();
 
-        // 认证策略生成
-        generateAuthenticationPolicy();
-    }
+        CredentialIssuanceAlgorithm.main(null);
+        // 获取注册服务实体参数
+        ipkMap = RegistrationAlgorithm.getIpkMap();
+        apk = RegistrationAlgorithm.getApk();
 
-    private static void initializeSetup() {
-        long startTime, endTime;
-
-        // 读取配对参数
-        startTime = System.currentTimeMillis();
-        PairingParameters params = PairingFactory.getPairingParameters("params/a.properties");
-        pairing = PairingFactory.getPairing(params);
-        G1 = pairing.getG1();
-        G2 = pairing.getG2();
-        Zp = pairing.getZr();
-        g1 = G1.newRandomElement().getImmutable();
-        g2 = G2.newRandomElement().getImmutable();
-        eta = pairing.getGT().newRandomElement().getImmutable();
-        endTime = System.currentTimeMillis();
-        System.out.println("初始化配对参数时间: " + (endTime - startTime) + "毫秒");
-    }
-
-    private static void generateAuthenticationPolicy() {
-        long startTime, endTime;
+        // 初始化其他参数
+        initializeSetupParams(setupParams);
 
         // 生成认证策略
+        generateAuthenticationPolicy("CV1");
+    }
+
+    private static void initializeSetupParams(SetupParams setupParams) {
+        pairing = setupParams.pairing;
+        G1 = setupParams.G1;
+        G2 = setupParams.G2;
+        Zp = pairing.getZr();
+        g = setupParams.g;
+        g1 = setupParams.g1;
+        g2 = setupParams.g2;
+        eta = setupParams.eta;
+    }
+
+    private static void generateAuthenticationPolicy(String verifierName) {
+        long startTime, endTime;
+
+        // 步骤1：生成认证策略密钥对
         startTime = System.currentTimeMillis();
-        int Ki = 3; // 假设CV想接受的最大发行者数量
+        int Ki = 3;  // 可接受的发行者数量
         Element[] xj = new Element[Ki];
         Element[] vpk = new Element[Ki];
-        for (int j = 0; j < Ki; j++) {
-            xj[j] = Zp.newRandomElement().getImmutable();
-            vpk[j] = g2.powZn(xj[j]).getImmutable();
+        for (int i = 0; i < Ki; i++) {
+            xj[i] = Zp.newRandomElement().getImmutable();
+            vpk[i] = g2.powZn(xj[i]).getImmutable();
         }
 
         Element kappa_i = Zp.newRandomElement().getImmutable();
-        Element product_ipk = g2.duplicate();
-        // 这里假设ipk_j是之前注册的发行者公钥，实际应用中应替换为正确的公钥
-        Element[] ipk_j = new Element[Ki];
-        for (int j = 0; j < Ki; j++) {
-            ipk_j[j] = G2.newRandomElement().getImmutable(); // 模拟公钥
-            product_ipk = product_ipk.mul(ipk_j[j].powZn(xj[j])).getImmutable();
+        Element Z = g.duplicate().powZn(kappa_i).getImmutable();
+        Element B1 = g1.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
+        Element B2 = g2.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
+
+        Map<String, Element> ipkSubset = new HashMap<>();
+        for (int i = 0; i < Ki; i++) {
+            String issuerName = "CI" + (i + 1);
+            if (ipkMap.containsKey(issuerName)) {
+                ipkSubset.putAll(ipkMap.get(issuerName));
+            }
         }
-        Element Z = product_ipk.powZn(kappa_i).getImmutable();
-        Element B1 = g1.powZn(kappa_i.invert()).getImmutable();
-        Element B2 = g2.powZn(kappa_i.invert()).getImmutable();
 
-        // 生成认证策略pol_i
-        Map<String, Object> pol_i = new HashMap<>();
-        pol_i.put("vpk", vpk);
-        pol_i.put("ipk_j", ipk_j);
-        pol_i.put("T_j", "Attribute Subsets");
-        pol_i.put("s_i", new Element[]{Z, B1, B2});
+        Element[] ipkElements = ipkSubset.values().toArray(new Element[0]);
+        Element s_i = Zp.newRandomElement().getImmutable();
+        Element[] s_i_elements = new Element[ipkElements.length];
+        for (int i = 0; i < ipkElements.length; i++) {
+            s_i_elements[i] = ipkElements[i].duplicate().powZn(s_i).getImmutable();
+        }
 
-        // 上传认证策略到区块链（模拟打印到控制台）
-        uploadPolicyToBlockchain("Authentication Policy", pol_i);
+        Map<String, Object> policy = new HashMap<>();
+        policy.put("vpk", vpk);
+        policy.put("ipkSubset", ipkSubset);
+        policy.put("Z", Z);
+        policy.put("B1", B1);
+        policy.put("B2", B2);
+        policy.put("s_i_elements", s_i_elements);
 
-        // 生成并发布零知识证明
-        Element[] zkProofSecrets = new Element[Ki + 1];
-        System.arraycopy(xj, 0, zkProofSecrets, 0, Ki);
-        zkProofSecrets[Ki] = kappa_i;
-        Element[] zkProofPublicKeys = new Element[Ki + 3];
-        System.arraycopy(vpk, 0, zkProofPublicKeys, 0, Ki);
-        zkProofPublicKeys[Ki] = Z;
-        zkProofPublicKeys[Ki + 1] = B1;
-        zkProofPublicKeys[Ki + 2] = B2;
-        publishZKProof("Verifier ZK Proof", zkProofSecrets, zkProofPublicKeys);
+        publishToBlockchain(verifierName + " Policy", policy);
 
         endTime = System.currentTimeMillis();
-        System.out.println("认证策略生成时间: " + (endTime - startTime) + "毫秒");
+        System.out.println(verifierName + " 认证策略生成时间: " + (endTime - startTime) + "毫秒");
     }
 
-    private static void uploadPolicyToBlockchain(String description, Map<String, Object> policy) {
-        System.out.println(description + ":");
-        policy.forEach((key, value) -> {
-            if (value instanceof Element[]) {
-                System.out.print(key + " = ");
-                for (Element elem : (Element[]) value) {
-                    System.out.print(elem + " ");
-                }
-                System.out.println();
-            } else {
-                System.out.println(key + " = " + value);
-            }
-        });
-    }
-
-    private static void publishZKProof(String description, Element[] secrets, Element[] publicKeys) {
-        System.out.println(description + ":");
-        // 这里假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
-        for (int i = 0; i < secrets.length; i++) {
-            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
-        }
-        for (int i = 0; i < publicKeys.length; i++) {
-            System.out.println("Public Key " + (i + 1) + " = " + publicKeys[i]);
-        }
+    private static void publishToBlockchain(String description, Map<String, Object> elements) {
+//        System.out.println(description + ":");
+//        elements.forEach((key, value) -> {
+//            if (value instanceof Element[]) {
+//                Element[] array = (Element[]) value;
+//                for (int i = 0; i < array.length; i++) {
+//                    System.out.println(key + "[" + i + "] = " + array[i]);
+//                }
+//            } else {
+//                System.out.println(key + " = " + value);
+//            }
+//        });
     }
 }

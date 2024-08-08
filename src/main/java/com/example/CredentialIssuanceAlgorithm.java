@@ -19,21 +19,18 @@ public class CredentialIssuanceAlgorithm {
     public static void main(String[] args) {
         // 初始化配对参数
         SetupParams setupParams = SetupAlgorithm.getInstance();
-        RegistrationAlgorithm.initializeSetupParams(setupParams);
+        initializeSetupParams(setupParams);
 
         // 注册服务实体
         RegistrationAlgorithm.main(null);  // 调用 RegistrationAlgorithm 注册实体
         ipkMap = RegistrationAlgorithm.getIpkMap();
         apk = RegistrationAlgorithm.getApk();
 
-        // 初始化其他参数
-        initializeSetupParams(setupParams);
-
         // 用户注册和凭证颁发
         userRegistrationAndCredentialIssuance();
     }
 
-    private static void initializeSetupParams(SetupParams setupParams) {
+    public static void initializeSetupParams(SetupParams setupParams) {
         pairing = setupParams.pairing;
         G1 = setupParams.G1;
         G2 = setupParams.G2;
@@ -44,7 +41,7 @@ public class CredentialIssuanceAlgorithm {
         eta = setupParams.eta;
     }
 
-    private static void userRegistrationAndCredentialIssuance() {
+    public static void userRegistrationAndCredentialIssuance() {
         long startTime, endTime;
         long originTime, exitTime;
         originTime = System.currentTimeMillis();
@@ -137,7 +134,7 @@ public class CredentialIssuanceAlgorithm {
         System.out.println("用户验证凭证时间: " + (endTime - startTime) + "毫秒");
 
         exitTime = System.currentTimeMillis();
-        System.out.println("用户注册与证书发放算法成功完成。用户注册与证书发放算法总时间为："+ (exitTime - originTime) + "毫秒");
+        System.out.println("用户注册和凭证分发算法成功完成。用户注册和凭证分发算法总时间为："+ (exitTime - originTime) + "毫秒");
     }
 
     private static Element computeF_A_alpha(String[] attributes) {
@@ -151,7 +148,7 @@ public class CredentialIssuanceAlgorithm {
 
     private static void publishZKProof(String description, Element[] secrets, Element[] publicKeys) {
 //        System.out.println(description + ":");
-        // 这里假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
+//        // 这里假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
 //        for (int i = 0; i < secrets.length; i++) {
 //            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
 //        }
