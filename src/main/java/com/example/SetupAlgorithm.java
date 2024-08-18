@@ -69,10 +69,10 @@ public class SetupAlgorithm {
                     // 步骤3：协商trapdoor α并计算向量
                     startTime = System.currentTimeMillis();
                     Element alpha = pairing.getZr().newRandomElement().getImmutable();
-                    int t = 5; // 最大属性集基数
-                    Element[] V1 = new Element[t];
-                    Element[] V2 = new Element[t];
-                    for (int i = 0; i < t; i++) {
+                    int k = 5; // 最大属性集基数
+                    Element[] V1 = new Element[k];
+                    Element[] V2 = new Element[k];
+                    for (int i = 0; i < k; i++) {
                         V1[i] = g1.duplicate().powZn(alpha.duplicate().powZn(pairing.getZr().newElement(i + 1))).getImmutable();
                         V2[i] = g2.duplicate().powZn(alpha.duplicate().powZn(pairing.getZr().newElement(i + 1))).getImmutable();
                     }
