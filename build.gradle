@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group = 'com.example'
+version = '1.0-SNAPSHOT'
+
+sourceCompatibility = '18'
+targetCompatibility = '18'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+dependencies {
+    implementation 'org.hyperledger.fabric-chaincode-java:fabric-chaincode-shim:2.2.3'
+    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
+    implementation name: 'jpbc-api-2.0.0'
+    implementation name: 'jpbc-plaf-2.0.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+}
+
+task installDist(type: Sync) {
+    from sourceSets.main.runtimeClasspath
+    into "$buildDir/install/authcc/lib"
+
+    from sourceSets.main.output
+    into "$buildDir/install/authcc/lib"
+}

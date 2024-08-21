@@ -9,14 +9,14 @@ import it.unisa.dia.gas.jpbc.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SetupAlgorithm {
+public class B_SetupAlgorithm {
 
     // 单例模式：存储 SetupParams 实例
     private static SetupParams instance;
 
     public static SetupParams initializeSetup() {
         if (instance == null) {
-            synchronized (SetupAlgorithm.class) {
+            synchronized (B_SetupAlgorithm.class) {
                 if (instance == null) {
                     long startTime, endTime;
                     long originTime, exitTime;

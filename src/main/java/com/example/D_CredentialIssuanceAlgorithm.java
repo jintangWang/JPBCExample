@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.SetupAlgorithm.SetupParams;
+import com.example.B_SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.jpbc.Field;
@@ -8,7 +8,7 @@ import it.unisa.dia.gas.jpbc.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CredentialIssuanceAlgorithm {
+public class D_CredentialIssuanceAlgorithm {
 
     private static Pairing pairing;
     private static Field G1, G2, Zp;
@@ -18,13 +18,13 @@ public class CredentialIssuanceAlgorithm {
 
     public static void main(String[] args) {
         // 初始化配对参数
-        SetupParams setupParams = SetupAlgorithm.getInstance();
+        SetupParams setupParams = B_SetupAlgorithm.getInstance();
         initializeSetupParams(setupParams);
 
         // 注册服务实体
-        RegistrationAlgorithm.main(null);  // 调用 RegistrationAlgorithm 注册实体
-        ipkMap = RegistrationAlgorithm.getIpkMap();
-        apk = RegistrationAlgorithm.getApk();
+        C_RegistrationAlgorithm.main(null);  // 调用 RegistrationAlgorithm 注册实体
+        ipkMap = C_RegistrationAlgorithm.getIpkMap();
+        apk = C_RegistrationAlgorithm.getApk();
 
         // 用户注册和凭证颁发
         userRegistrationAndCredentialIssuance();

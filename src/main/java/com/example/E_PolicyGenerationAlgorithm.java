@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.SetupAlgorithm.SetupParams;
+import com.example.B_SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.jpbc.Field;
@@ -8,7 +8,7 @@ import it.unisa.dia.gas.jpbc.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PolicyGenerationAlgorithm {
+public class E_PolicyGenerationAlgorithm {
 
     private static Pairing pairing;
     private static Field G1, G2, Zp;
@@ -18,12 +18,12 @@ public class PolicyGenerationAlgorithm {
 
     public static void main(String[] args) {
         // 初始化配对参数
-        SetupParams setupParams = SetupAlgorithm.getInstance();
+        SetupParams setupParams = B_SetupAlgorithm.getInstance();
 
-        CredentialIssuanceAlgorithm.main(null);
+        D_CredentialIssuanceAlgorithm.main(null);
         // 获取注册服务实体参数
-        ipkMap = RegistrationAlgorithm.getIpkMap();
-        apk = RegistrationAlgorithm.getApk();
+        ipkMap = C_RegistrationAlgorithm.getIpkMap();
+        apk = C_RegistrationAlgorithm.getApk();
 
         // 初始化其他参数
         initializeSetupParams(setupParams);

@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.SetupAlgorithm.SetupParams;
+import com.example.B_SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.jpbc.Field;
@@ -8,7 +8,7 @@ import it.unisa.dia.gas.jpbc.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RegistrationAlgorithm {
+public class C_RegistrationAlgorithm {
 
     private static Pairing pairing;
     private static Field G1, G2, Zp;
@@ -18,7 +18,7 @@ public class RegistrationAlgorithm {
 
     public static void main(String[] args) {
         // 初始化配对参数
-        SetupParams setupParams = SetupAlgorithm.getInstance();
+        SetupParams setupParams = B_SetupAlgorithm.getInstance();
         initializeSetupParams(setupParams);
 
         long originTime, exitTime;
