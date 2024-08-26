@@ -7,6 +7,7 @@ import org.hyperledger.fabric.contract.annotation.Transaction;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Contract(name = "AuthenticationContract")
@@ -26,10 +27,45 @@ public class F_AuthenticationContract implements ContractInterface {
     private static Map<String, Object> params; // System parameters like pp, spk, etc.
 
     @Transaction
-    public void Init(Context ctx, int t, Map<String, Object> systemParams) {
+    public void Init(Context ctx, int t, String spk, String hashFunctionH, String hashFunctionH1,
+                            List<String> CCMInfo, String relationTDH, String relationIpk,
+                            String relationIsk, List<String> vectorV1, List<String> vectorV2) {
         T = t;  // Set number of credential committee members
-        params = systemParams;  // Initialize system parameters
+        params = new HashMap<>();  // Initialize system parameters map
 
+        ChaincodeStub stub = ctx.getStub();
+
+        // Store system parameters on the blockchain
+        params.put("pp", "bilinear_group_parameters"); // Example placeholder
+        params.put("spk", spk);
+        params.put("hashFunctionH", hashFunctionH);
+        params.put("hashFunctionH1", hashFunctionH1);
+        params.put("relationTDH", relationTDH);
+        params.put("relationIpk", relationIpk);
+        params.put("relationIsk", relationIsk);
+        params.put("CCMInfo", CCMInfo);
+        params.put("vectorV1", vectorV1);
+        params.put("vectorV2", vectorV2);
+
+        stub.putStringState("spk", spk);
+        stub.putStringState("hashFunctionH", hashFunctionH);
+        stub.putStringState("hashFunctionH1", hashFunctionH1);
+        stub.putStringState("relationTDH", relationTDH);
+        stub.putStringState("relationIpk", relationIpk);
+        stub.putStringState("relationIsk", relationIsk);
+
+        for (int i = 0; i < vectorV1.size(); i++) {
+            stub.putStringState("V1_" + i, vectorV1.get(i));
+        }
+        for (int i = 0; i < vectorV2.size(); i++) {
+            stub.putStringState("V2_" + i, vectorV2.get(i));
+        }
+
+        for (int i = 0; i < CCMInfo.size(); i++) {
+            stub.putStringState("CCM_" + i, CCMInfo.get(i));
+        }
+
+        // Clear previous states
         State.clear();
         Req.clear();
         IDs.clear();
@@ -40,8 +76,35 @@ public class F_AuthenticationContract implements ContractInterface {
         Rec.clear();
         Num.clear();
 
-        System.out.println("Init: Contract parameters have been initialized");
+        System.out.println("systemSetup: Contract parameters have been initialized and written to the blockchain.");
     }
+
+    @Transaction
+    public void registerCredentialIssuer(Context ctx, String issuerName, String ipk, String zkProofCI) {
+        ChaincodeStub stub = ctx.getStub();
+
+        // 将ipk存储到区块链公共账本
+        stub.putStringState(issuerName + "_ipk", ipk);
+
+        // 存储对应的零知识证明
+        stub.putStringState(issuerName + "_zkProofCI", zkProofCI);
+
+        System.out.println("Credential Issuer " + issuerName + " registered with public key and zero-knowledge proof.");
+    }
+
+    @Transaction
+    public void registerCredentialAuditor(Context ctx, String auditorName, String apk, String zkProofCA) {
+        ChaincodeStub stub = ctx.getStub();
+
+        // 将apk存储到区块链公共账本
+        stub.putStringState(auditorName + "_apk", apk);
+
+        // 存储对应的零知识证明
+        stub.putStringState(auditorName + "_zkProofCA", zkProofCA);
+
+        System.out.println("Credential Auditor " + auditorName + " registered with public key and zero-knowledge proof.");
+    }
+
 
     @Transaction
     public void Auth(Context ctx, String aid, String auth, String ID, String proofAuth, String delta) {
@@ -136,4 +199,5 @@ public class F_AuthenticationContract implements ContractInterface {
         // Simulated zero-knowledge proof verification
         return true;
     }
+
 }
