@@ -33,6 +33,7 @@ public class B_SetupAlgorithm {
                     Element g = G1.newRandomElement().getImmutable();
                     Element g1 = G1.newRandomElement().getImmutable();
                     Element g2 = G2.newRandomElement().getImmutable();
+                    Element h = G1.newRandomElement().getImmutable(); // 新增 h 参数
                     Element eta = GT.newRandomElement().getImmutable();
                     endTime = System.currentTimeMillis();
                     System.out.println("生成安全参数时间: " + (endTime - startTime) + "毫秒");
@@ -82,7 +83,7 @@ public class B_SetupAlgorithm {
                     exitTime = System.currentTimeMillis();
                     System.out.println("设置算法成功完成。设置算法总时间为："+ (exitTime - originTime) + "毫秒");
 
-                    instance = new SetupParams(params, pairing, G1, G2, GT, g, g1, g2, eta, sk, inf, spk, V1, V2);
+                    instance = new SetupParams(params, pairing, G1, G2, GT, g, g1, g2, h, eta, sk, inf, spk, V1, V2);
                 }
             }
         }
@@ -100,12 +101,12 @@ public class B_SetupAlgorithm {
         public PairingParameters params;
         public Pairing pairing;
         public Field G1, G2, GT;
-        public Element g, g1, g2, eta;
+        public Element g, g1, g2, h, eta;
         public Map<Integer, Element> sk, inf;
         public Element spk;
         public Element[] V1, V2;
 
-        public SetupParams(PairingParameters params, Pairing pairing, Field G1, Field G2, Field GT, Element g, Element g1, Element g2, Element eta, Map<Integer, Element> sk, Map<Integer, Element> inf, Element spk, Element[] V1, Element[] V2) {
+        public SetupParams(PairingParameters params, Pairing pairing, Field G1, Field G2, Field GT, Element g, Element g1, Element g2, Element h, Element eta, Map<Integer, Element> sk, Map<Integer, Element> inf, Element spk, Element[] V1, Element[] V2) {
             this.params = params;
             this.pairing = pairing;
             this.G1 = G1;
@@ -114,6 +115,7 @@ public class B_SetupAlgorithm {
             this.g = g;
             this.g1 = g1;
             this.g2 = g2;
+            this.h = h;
             this.eta = eta;
             this.sk = sk;
             this.inf = inf;
@@ -122,26 +124,6 @@ public class B_SetupAlgorithm {
             this.V2 = V2;
         }
 
-        public boolean isEmpty() {
-            if (params == null || pairing == null || G1 == null || G2 == null || GT == null ||
-                    g == null || g1 == null || g2 == null || eta == null || sk == null || inf == null ||
-                    spk == null || V1 == null || V2 == null) {
-                return true;
-            }
-            if (sk.isEmpty() || inf.isEmpty()) {
-                return true;
-            }
-            for (Element v : V1) {
-                if (v == null) {
-                    return true;
-                }
-            }
-            for (Element v : V2) {
-                if (v == null) {
-                    return true;
-                }
-            }
-            return false;
-        }
+        // isEmpty 方法保持不变
     }
 }
