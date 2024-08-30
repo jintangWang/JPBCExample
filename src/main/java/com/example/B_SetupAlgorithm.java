@@ -90,6 +90,11 @@ public class B_SetupAlgorithm {
         return instance;
     }
 
+    public static void main(String[] args) {
+        // 初始化配对参数
+        initializeSetup();
+    }
+
     public static SetupParams getInstance() {
         if (instance == null) {
             return initializeSetup();
