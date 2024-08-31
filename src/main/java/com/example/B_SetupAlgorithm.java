@@ -8,6 +8,8 @@ import it.unisa.dia.gas.jpbc.Field;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.Arrays;
 
 public class B_SetupAlgorithm {
 
@@ -30,6 +32,7 @@ public class B_SetupAlgorithm {
                     Field G1 = pairing.getG1();
                     Field G2 = pairing.getG2();
                     Field GT = pairing.getGT();
+                    // 从 G1 中随机选取元素
                     Element g = G1.newRandomElement().getImmutable();
                     Element g1 = G1.newRandomElement().getImmutable();
                     Element g2 = G2.newRandomElement().getImmutable();
@@ -57,6 +60,7 @@ public class B_SetupAlgorithm {
                     for (int i = 1; i <= N; i++) {
                         Element ski = coeffs[0].duplicate();
                         for (int j = 1; j < T; j++) {
+                            // powZn 表示幂运算
                             ski = ski.add(coeffs[j].duplicate().mulZn(pairing.getZr().newElement(i).powZn(pairing.getZr().newElement(j))));
                         }
                         sk.put(i, ski.getImmutable());
@@ -129,6 +133,80 @@ public class B_SetupAlgorithm {
             this.V2 = V2;
         }
 
-        // isEmpty 方法保持不变
+        // 等价关系 R_TDH 的验证方法
+        public boolean checkRTDH(List<Element> M, List<Element> N, List<Element> MPrime, List<Element> NPrime, Element mu, Element nu) {
+            if (M.size() != N.size() || M.size() != MPrime.size() || N.size() != NPrime.size()) {
+                return false;
+            }
+
+            for (int i = 0; i < M.size(); i++) {
+                Element expectedMPrime = M.get(i).duplicate().powZn(mu.duplicate().mul(nu));
+                Element expectedNPrime = N.get(i).duplicate().powZn(nu);
+                if (!expectedMPrime.isEqual(MPrime.get(i)) || !expectedNPrime.isEqual(NPrime.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 等价关系 R_ipk 的验证方法
+        public boolean checkRIpk(List<Element> ipk, List<Element> ipkPrime, Element omega) {
+            if (ipk.size() != ipkPrime.size()) {
+                return false;
+            }
+
+            for (int i = 0; i < ipk.size(); i++) {
+                Element expectedIpkPrime = ipk.get(i).duplicate().powZn(omega);
+                if (!expectedIpkPrime.isEqual(ipkPrime.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 等价关系 R_isk 的验证方法
+        public boolean checkRIsk(List<Element> isk, List<Element> iskPrime, Element omega) {
+            if (isk.size() != iskPrime.size()) {
+                return false;
+            }
+
+            for (int i = 0; i < isk.size(); i++) {
+                Element expectedIskPrime = isk.get(i).duplicate().mul(omega);
+                if (!expectedIskPrime.isEqual(iskPrime.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 等价关系 R_upk 的验证方法
+        public boolean checkRUpk(List<Element> upk, List<Element> upkPrime, Element mu) {
+            if (upk.size() != upkPrime.size()) {
+                return false;
+            }
+
+            for (int i = 0; i < upk.size(); i++) {
+                Element expectedUpkPrime = upk.get(i).duplicate().powZn(mu);
+                if (!expectedUpkPrime.isEqual(upkPrime.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 等价关系 R_usk 的验证方法
+        public boolean checkRUsk(List<Element> usk, List<Element> uskPrime, Element mu) {
+            if (usk.size() != uskPrime.size()) {
+                return false;
+            }
+
+            for (int i = 0; i < usk.size(); i++) {
+                Element expectedUskPrime = usk.get(i).duplicate().mul(mu);
+                if (!expectedUskPrime.isEqual(uskPrime.get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }
