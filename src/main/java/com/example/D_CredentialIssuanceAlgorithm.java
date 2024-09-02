@@ -167,46 +167,6 @@ public class D_CredentialIssuanceAlgorithm {
         Element b = sigma[1];
         Element s = sigma[2];
 
-        // 检查所有元素是否为 null
-        if (g1h == null) {
-            System.out.println("g1h is null");
-        }
-        if (b == null) {
-            System.out.println("b is null");
-        }
-        if (s == null) {
-            System.out.println("s is null");
-        }
-        if (upk == null) {
-            System.out.println("upk is null");
-        } else {
-            if (upk[0] == null) {
-                System.out.println("upk[0] is null");
-            }
-            if (upk[1] == null) {
-                System.out.println("upk[1] is null");
-            }
-        }
-        if (M == null) {
-            System.out.println("M is null");
-        } else {
-            if (M[0] == null) {
-                System.out.println("M[0] is null");
-            }
-            if (M[1] == null) {
-                System.out.println("M[1] is null");
-            }
-        }
-        if (N == null) {
-            System.out.println("N is null");
-        } else {
-            if (N[0] == null) {
-                System.out.println("N[0] is null");
-            }
-            if (N[1] == null) {
-                System.out.println("N[1] is null");
-            }
-        }
         // 假设ipkMap中存储的是发行者的公钥
         Map<String, Element> issuerKeys = ipkMap.get("CI1");  // 假设CI1是其中一个发行者
         if (issuerKeys == null) {
@@ -219,42 +179,12 @@ public class D_CredentialIssuanceAlgorithm {
         Element Z1 = issuerKeys.get("Z1");
         Element Z2 = issuerKeys.get("Z2");
 
-        // 检查公钥是否为 null
-        if (X == null) {
-            System.out.println("X is null");
-        }
-        if (Y1 == null) {
-            System.out.println("Y1 is null");
-        }
-        if (Y2 == null) {
-            System.out.println("Y2 is null");
-        }
-        if (Z1 == null) {
-            System.out.println("Z1 is null");
-        }
-        if (Z2 == null) {
-            System.out.println("Z2 is null");
-        }
-
-        // 调试输出以检查中间值
-//        System.out.println("g1h: " + g1h);
-//        System.out.println("X: " + X);
-//        System.out.println("M[0]: " + M[0]);
-//        System.out.println("Y1: " + Y1);
-//        System.out.println("M[1]: " + M[1]);
-//        System.out.println("Y2: " + Y2);
-//        System.out.println("s: " + s);
-//        System.out.println("g2: " + g2);
 
         Element pairing1 = pairing.pairing(g1h, X);
         Element pairing2 = pairing.pairing(M[0], Y1);
         Element pairing3 = pairing.pairing(M[1], Y2);
         Element pairing4 = pairing.pairing(s, g2);
 
-//        System.out.println("pairing(g1h, X): " + pairing1);
-//        System.out.println("pairing(M[0], Y1): " + pairing2);
-//        System.out.println("pairing(M[1], Y2): " + pairing3);
-//        System.out.println("pairing(s, g2): " + pairing4);
 
         boolean firstCheck = pairing1.mul(pairing2).mul(pairing3).isEqual(pairing4);
 
@@ -262,9 +192,6 @@ public class D_CredentialIssuanceAlgorithm {
         Element pairing6 = pairing.pairing(upk[0], Z1);
         Element pairing7 = pairing.pairing(upk[1], Z2);
 
-//        System.out.println("pairing(b, g2): " + pairing5);
-//        System.out.println("pairing(upk[0], Z1): " + pairing6);
-//        System.out.println("pairing(upk[1], Z2): " + pairing7);
 
         boolean secondCheck = pairing5.isEqual(pairing6.mul(pairing7));
 
