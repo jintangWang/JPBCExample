@@ -52,23 +52,25 @@ public class D_CredentialIssuanceAlgorithm {
         Element rho2 = Zp.newRandomElement().getImmutable();
         Element usk = Zp.newElement().set(rho1).set(rho2).getImmutable();
 
-        // 构建aux
-        String aux = "auxiliary data";
-        Element h = pairing.getZr().newElement().setFromHash(aux.getBytes(), 0, aux.length()).getImmutable();
-
-        Element T1 = g1.powZn(h.mul(rho1)).getImmutable();
-        Element T2 = g1.powZn(h.mul(rho2)).getImmutable();
-        Element upkT1 = g1.powZn(rho1).getImmutable();
-        Element upkT2 = g2.powZn(rho2).getImmutable();
-
-        // 构建commitment
+        // 构建属性集承诺
         String attributeSet = "attribute set";
         Element r = Zp.newRandomElement().getImmutable();
         Element C_Aj = pairing.getG1().newElement().setFromHash(attributeSet.getBytes(), 0, attributeSet.length()).powZn(r).getImmutable();
 
-        Element[] V1 = new Element[]{g1, g1.duplicate().powZn(eta)};
-        Element[] V2 = new Element[]{g2, g2.duplicate().powZn(eta)};
+        // 获取一个发行者的公钥，假设为 "CI1"
+        Map<String, Element> issuerKeys = ipkMap.get("CI1");
+        Element ipk_j = issuerKeys.get("X");  // 假设 ipk_j 代表发行者公钥的一部分
 
+        // 构建 aux 数据
+        Element upkT1 = g1.powZn(rho1).getImmutable();
+        Element upkT2 = g2.powZn(rho2).getImmutable();
+        String auxString = upkT1.toString() + upkT2.toString() + C_Aj.toString() + ipk_j.toString();
+        Element h = pairing.getZr().newElement().setFromHash(auxString.getBytes(), 0, auxString.length()).getImmutable();
+
+        Element T1 = g1.powZn(h.mul(rho1)).getImmutable();
+        Element T2 = g1.powZn(h.mul(rho2)).getImmutable();
+
+        // 构建 f_A(alpha)
         Element f_A_alpha = computeF_A_alpha(new String[]{"attr1", "attr2"});
         Element M1 = T1.powZn(f_A_alpha).getImmutable();
         Element M2 = T2.powZn(eta).getImmutable();
@@ -85,7 +87,7 @@ public class D_CredentialIssuanceAlgorithm {
 
         // 发送(aux, upk, (M, N), pi_CH)给发行者
         Map<String, Object> requestData = new HashMap<>();
-        requestData.put("aux", aux);
+        requestData.put("aux", auxString);
         requestData.put("upk", new Element[]{T1, T2});
         requestData.put("M", M);
         requestData.put("N", N);
@@ -147,18 +149,13 @@ public class D_CredentialIssuanceAlgorithm {
     }
 
     private static void publishZKProof(String description, Element[] secrets, Element[] publicKeys) {
-//        System.out.println(description + ":");
-//        // 这里假设已经有零知识证明算法实现，将秘密和公钥用于生成零知识证明
-//        for (int i = 0; i < secrets.length; i++) {
-//            System.out.println("Secret " + (i + 1) + " = " + secrets[i]);
-//        }
-//        for (int i = 0; i < publicKeys.length; i++) {
-//            System.out.println("Public Key " + (i + 1) + " = " + publicKeys[i]);
-//        }
+        // 在这里生成并发布零知识证明
+        // 这个部分应该根据论文中的 ZKPoK 定义和原理，结合前面生成的参数实现
     }
 
     private static boolean verifyZKProof(Element[] secrets, Element[] publicKeys) {
-        // 假设零知识证明验证逻辑已经实现
+        // 实现零知识证明的验证逻辑
+        // 这个部分应该根据论文中的 ZKPoK 定义和原理，结合前面生成的参数实现
         return true;
     }
 
@@ -179,12 +176,10 @@ public class D_CredentialIssuanceAlgorithm {
         Element Z1 = issuerKeys.get("Z1");
         Element Z2 = issuerKeys.get("Z2");
 
-
         Element pairing1 = pairing.pairing(g1h, X);
         Element pairing2 = pairing.pairing(M[0], Y1);
         Element pairing3 = pairing.pairing(M[1], Y2);
         Element pairing4 = pairing.pairing(s, g2);
-
 
         boolean firstCheck = pairing1.mul(pairing2).mul(pairing3).isEqual(pairing4);
 
@@ -192,15 +187,9 @@ public class D_CredentialIssuanceAlgorithm {
         Element pairing6 = pairing.pairing(upk[0], Z1);
         Element pairing7 = pairing.pairing(upk[1], Z2);
 
-
         boolean secondCheck = pairing5.isEqual(pairing6.mul(pairing7));
 
         boolean thirdCheck = pairing.pairing(upk[0], N[0]).isEqual(pairing.pairing(M[0], g2)) && pairing.pairing(upk[1], N[1]).isEqual(pairing.pairing(M[1], g2));
-
-        // 添加调试输出以检查检查结果
-//        System.out.println("firstCheck: " + firstCheck);
-//        System.out.println("secondCheck: " + secondCheck);
-//        System.out.println("thirdCheck: " + thirdCheck);
 
         return firstCheck && secondCheck && thirdCheck;
     }
