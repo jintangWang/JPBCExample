@@ -52,25 +52,21 @@ public class D_CredentialIssuanceAlgorithm {
         Element rho2 = Zp.newRandomElement().getImmutable();
         Element usk = Zp.newElement().set(rho1).set(rho2).getImmutable();
 
-        // 构建属性集承诺
+        // 构建aux
         String attributeSet = "attribute set";
         Element r = Zp.newRandomElement().getImmutable();
-        Element C_Aj = pairing.getG1().newElement().setFromHash(attributeSet.getBytes(), 0, attributeSet.length()).powZn(r).getImmutable();
+        // C_{A_j} = H'(A_j || r)
+        Element C_Aj = pairing.getG1().newElement()
+                .setFromHash((attributeSet + r.toString()).getBytes(), 0, (attributeSet + r.toString()).length())
+                .getImmutable();
 
-        // 获取一个发行者的公钥，假设为 "CI1"
-        Map<String, Element> issuerKeys = ipkMap.get("CI1");
-        Element ipk_j = issuerKeys.get("X");  // 假设 ipk_j 代表发行者公钥的一部分
-
-        // 构建 aux 数据
-        Element upkT1 = g1.powZn(rho1).getImmutable();
-        Element upkT2 = g2.powZn(rho2).getImmutable();
-        String auxString = upkT1.toString() + upkT2.toString() + C_Aj.toString() + ipk_j.toString();
-        Element h = pairing.getZr().newElement().setFromHash(auxString.getBytes(), 0, auxString.length()).getImmutable();
+        String aux = g1.powZn(rho1).toString() + g2.powZn(rho2).toString() + C_Aj.toString(); // 结合 g1^rho1, g2^rho2 和 C_Aj
+        Element h = pairing.getZr().newElement().setFromHash(aux.getBytes(), 0, aux.length()).getImmutable();
 
         Element T1 = g1.powZn(h.mul(rho1)).getImmutable();
         Element T2 = g1.powZn(h.mul(rho2)).getImmutable();
 
-        // 构建 f_A(alpha)
+        // 计算 f_A(alpha) 的值
         Element f_A_alpha = computeF_A_alpha(new String[]{"attr1", "attr2"});
         Element M1 = T1.powZn(f_A_alpha).getImmutable();
         Element M2 = T2.powZn(eta).getImmutable();
@@ -81,17 +77,16 @@ public class D_CredentialIssuanceAlgorithm {
         Element[] N = new Element[]{N1, N2};
 
         // 生成并发布零知识证明
-        Element[] zkProofSecrets = {rho1, rho2, f_A_alpha};
-        Element[] zkProofPublicKeys = {T1, T2, M1, N1};
-        publishZKProof("User ZK Proof", zkProofSecrets, zkProofPublicKeys);
+        Element[] zkProof = ZkPoK_CH.generateZKProof(rho1, rho2, new Element[]{f_A_alpha}, g1, g2, h, T1, T2, f_A_alpha);
+        publishZKProof("User ZK Proof", zkProof);
 
         // 发送(aux, upk, (M, N), pi_CH)给发行者
         Map<String, Object> requestData = new HashMap<>();
-        requestData.put("aux", auxString);
+        requestData.put("aux", aux);
         requestData.put("upk", new Element[]{T1, T2});
         requestData.put("M", M);
         requestData.put("N", N);
-        requestData.put("zkProof", "Zero-Knowledge Proof Data");
+        requestData.put("zkProof", zkProof);
         // 模拟发送数据到发行者
 
         endTime = System.currentTimeMillis();
@@ -100,7 +95,7 @@ public class D_CredentialIssuanceAlgorithm {
         // 步骤2：发行者验证并生成凭证
         startTime = System.currentTimeMillis();
         // 假设发行者收到并验证了请求数据
-        boolean proofValid = verifyZKProof(zkProofSecrets, zkProofPublicKeys);
+        boolean proofValid = ZkPoK_CH.verifyZKProof(zkProof, g1, g2, h, f_A_alpha);
         if (!proofValid) {
             System.out.println("零知识证明验证失败");
             return;
@@ -109,8 +104,8 @@ public class D_CredentialIssuanceAlgorithm {
         // 生成凭证
         Element[] zkProofElements = (Element[]) requestData.get("upk");
         Element g1h = g1.powZn(h).getImmutable();
-        Element b = zkProofElements[0].powZn(zkProofSecrets[1]).mul(zkProofElements[1]).getImmutable();
-        Element s = g1h.powZn(zkProofSecrets[0]).mul(M1.powZn(zkProofSecrets[1])).mul(M2.powZn(zkProofSecrets[2])).getImmutable();
+        Element b = zkProofElements[0].powZn(rho2).mul(zkProofElements[1]).getImmutable();
+        Element s = g1h.powZn(rho1).mul(M1.powZn(rho2)).mul(M2.powZn(f_A_alpha)).getImmutable();
 
         Map<String, Object> cred = new HashMap<>();
         cred.put("M", M);
@@ -140,7 +135,7 @@ public class D_CredentialIssuanceAlgorithm {
     }
 
     private static Element computeF_A_alpha(String[] attributes) {
-        Element f_A_alpha = Zp.newOneElement();
+        Element f_A_alpha = Zp.newOneElement();  // 确保 f_A_alpha 是在 Zr 域中生成的
         for (String attr : attributes) {
             Element attrElem = Zp.newElement().setFromHash(attr.getBytes(), 0, attr.length());
             f_A_alpha = f_A_alpha.mul(attrElem);
@@ -148,15 +143,9 @@ public class D_CredentialIssuanceAlgorithm {
         return f_A_alpha.getImmutable();
     }
 
-    private static void publishZKProof(String description, Element[] secrets, Element[] publicKeys) {
-        // 在这里生成并发布零知识证明
-        // 这个部分应该根据论文中的 ZKPoK 定义和原理，结合前面生成的参数实现
-    }
-
-    private static boolean verifyZKProof(Element[] secrets, Element[] publicKeys) {
-        // 实现零知识证明的验证逻辑
-        // 这个部分应该根据论文中的 ZKPoK 定义和原理，结合前面生成的参数实现
-        return true;
+    private static void publishZKProof(String description, Element[] zkProof) {
+        // 调用智能合约这里将零知识证明发布到区块链
+        // System.out.println(description + " Zero-Knowledge Proof: " + Arrays.toString(zkProof));
     }
 
     private static boolean verifyCredential(Element[] sigma, Element[] upk, Element[] M, Element[] N) {

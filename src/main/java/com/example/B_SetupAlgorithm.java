@@ -36,7 +36,7 @@ public class B_SetupAlgorithm {
                     Element g = G1.newRandomElement().getImmutable();
                     Element g1 = G1.newRandomElement().getImmutable();
                     Element g2 = G2.newRandomElement().getImmutable();
-                    Element h = G1.newRandomElement().getImmutable(); // 新增 h 参数
+                    Element h = G1.newRandomElement().getImmutable();
                     Element eta = GT.newRandomElement().getImmutable();
                     endTime = System.currentTimeMillis();
                     System.out.println("生成安全参数时间: " + (endTime - startTime) + "毫秒");
