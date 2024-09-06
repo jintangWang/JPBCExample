@@ -12,7 +12,7 @@ public class D_CredentialIssuanceAlgorithm {
 
     private static Pairing pairing;
     private static Field G1, G2, Zp;
-    private static Element g, g1, g2, eta;
+    private static Element g, g1, g2, alpha, eta;
     private static Map<String, Map<String, Element>> ipkMap;
     private static Element apk;
 
@@ -38,6 +38,7 @@ public class D_CredentialIssuanceAlgorithm {
         g = setupParams.g;
         g1 = setupParams.g1;
         g2 = setupParams.g2;
+        alpha = setupParams.alpha;
         eta = setupParams.eta;
     }
 
@@ -67,7 +68,7 @@ public class D_CredentialIssuanceAlgorithm {
         Element T2 = g1.powZn(h.mul(rho2)).getImmutable();
 
         // 计算 f_A(alpha) 的值
-        Element f_A_alpha = computeF_A_alpha(new String[]{"attr1", "attr2"});
+        Element f_A_alpha = computeF_A_alpha(new String[]{"attr1", "attr2"}, alpha);
         Element M1 = T1.powZn(f_A_alpha).getImmutable();
         Element M2 = T2.powZn(eta).getImmutable();
         Element N1 = g2.powZn(f_A_alpha).getImmutable();
@@ -134,11 +135,12 @@ public class D_CredentialIssuanceAlgorithm {
         System.out.println("用户注册和凭证分发算法成功完成。用户注册和凭证分发算法总时间为："+ (exitTime - originTime) + "毫秒");
     }
 
-    private static Element computeF_A_alpha(String[] attributes) {
-        Element f_A_alpha = Zp.newOneElement();  // 确保 f_A_alpha 是在 Zr 域中生成的
+    private static Element computeF_A_alpha(String[] attributes, Element alpha) {
+        Element f_A_alpha = Zp.newOneElement(); // 初始化为 1，用于乘积
         for (String attr : attributes) {
             Element attrElem = Zp.newElement().setFromHash(attr.getBytes(), 0, attr.length());
-            f_A_alpha = f_A_alpha.mul(attrElem);
+            Element term = alpha.duplicate().sub(attrElem); // 计算 (α - a_i)
+            f_A_alpha = f_A_alpha.mul(term); // 将所有 (α - a_i) 相乘
         }
         return f_A_alpha.getImmutable();
     }
