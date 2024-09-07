@@ -77,8 +77,8 @@ public class D_CredentialIssuanceAlgorithm {
         Element[] M = new Element[]{M1, M2};
         Element[] N = new Element[]{N1, N2};
 
-        // 生成并发布零知识证明
-        Element[] zkProof = ZkPoK_CH.generateZKProof(rho1, rho2, new Element[]{f_A_alpha}, g1, g2, h, T1, T2, f_A_alpha);
+        // 调用零知识证明生成函数时传递 pairing 对象
+        Element[] zkProof = ZkPoK_CH.generateZKProof(rho1, rho2, new Element[]{f_A_alpha}, g1, g2, h, T1, T2, f_A_alpha, pairing);
         publishZKProof("User ZK Proof", zkProof);
 
         // 发送(aux, upk, (M, N), pi_CH)给发行者
@@ -96,10 +96,12 @@ public class D_CredentialIssuanceAlgorithm {
         // 步骤2：发行者验证并生成凭证
         startTime = System.currentTimeMillis();
         // 假设发行者收到并验证了请求数据
-        boolean proofValid = ZkPoK_CH.verifyZKProof(zkProof, g1, g2, h, f_A_alpha);
+        boolean proofValid = ZkPoK_CH.verifyZKProof(zkProof, g1, g2, h, f_A_alpha, pairing);
         if (!proofValid) {
             System.out.println("零知识证明验证失败");
             return;
+        } else {
+            System.out.println("零知识证明验证成功");
         }
 
         // 生成凭证
@@ -124,7 +126,6 @@ public class D_CredentialIssuanceAlgorithm {
         boolean credValid = verifyCredential(sigma, zkProofElements, M, N);
         if (credValid) {
             System.out.println("凭证验证成功");
-            // 将凭证存储到用户的本地数据库中
         } else {
             System.out.println("凭证验证失败");
         }
