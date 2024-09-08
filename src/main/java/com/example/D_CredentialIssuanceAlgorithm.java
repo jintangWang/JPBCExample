@@ -125,9 +125,9 @@ public class D_CredentialIssuanceAlgorithm {
         Element[] sigma = (Element[]) cred.get("sigma");
         boolean credValid = verifyCredential(sigma, zkProofElements, M, N);
         if (credValid) {
-            System.out.println("凭证验证成功");
-        } else {
             System.out.println("凭证验证失败");
+        } else {
+            System.out.println("凭证验证成功");
         }
         endTime = System.currentTimeMillis();
         System.out.println("用户验证凭证时间: " + (endTime - startTime) + "毫秒");

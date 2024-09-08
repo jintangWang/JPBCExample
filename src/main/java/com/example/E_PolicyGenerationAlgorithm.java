@@ -20,7 +20,7 @@ public class E_PolicyGenerationAlgorithm {
         // 初始化配对参数
         SetupParams setupParams = B_SetupAlgorithm.getInstance();
 
-        D_CredentialIssuanceAlgorithm.main(null);
+        D_CredentialIssuanceAlgorithm.main(null);  // 执行之前的发行凭证算法
         // 获取注册服务实体参数
         ipkMap = C_RegistrationAlgorithm.getIpkMap();
         apk = C_RegistrationAlgorithm.getApk();
@@ -28,7 +28,7 @@ public class E_PolicyGenerationAlgorithm {
         // 初始化其他参数
         initializeSetupParams(setupParams);
 
-        // 生成认证策略
+        // 生成认证策略并生成零知识证明
         generateAuthenticationPolicy("CV1");
     }
 
@@ -48,7 +48,7 @@ public class E_PolicyGenerationAlgorithm {
 
         // 步骤1：生成认证策略密钥对
         startTime = System.currentTimeMillis();
-        int Ki = 3;  // 可接受的发行者数量
+        int Ki = 5;  // 可接受的发行者数量
         Element[] xj = new Element[Ki];
         Element[] vpk = new Element[Ki];
         for (int i = 0; i < Ki; i++) {
@@ -61,6 +61,7 @@ public class E_PolicyGenerationAlgorithm {
         Element B1 = g1.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
         Element B2 = g2.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
 
+        // 获取部分发行者的公钥
         Map<String, Element> ipkSubset = new HashMap<>();
         for (int i = 0; i < Ki; i++) {
             String issuerName = "CI" + (i + 1);
@@ -70,37 +71,28 @@ public class E_PolicyGenerationAlgorithm {
         }
 
         Element[] ipkElements = ipkSubset.values().toArray(new Element[0]);
-        Element s_i = Zp.newRandomElement().getImmutable();
-        Element[] s_i_elements = new Element[ipkElements.length];
-        for (int i = 0; i < ipkElements.length; i++) {
-            s_i_elements[i] = ipkElements[i].duplicate().powZn(s_i).getImmutable();
-        }
 
-        Map<String, Object> policy = new HashMap<>();
-        policy.put("vpk", vpk);
-        policy.put("ipkSubset", ipkSubset);
-        policy.put("Z", Z);
-        policy.put("B1", B1);
-        policy.put("B2", B2);
-        policy.put("s_i_elements", s_i_elements);
-
-        publishToBlockchain(verifierName + " Policy", policy);
+        // 生成并发布零知识证明
+        Element[] zkProof = ZkPoK_pol.generateZKProof(xj, kappa_i, g1, g2, ipkElements, Z, B1, B2, pairing);
+        publishToBlockchain(verifierName + " Policy", zkProof);
 
         endTime = System.currentTimeMillis();
         System.out.println(verifierName + " 认证策略生成时间: " + (endTime - startTime) + "毫秒");
+
+        // 步骤2：验证零知识证明
+//        startTime = System.currentTimeMillis();
+//        boolean proofValid = ZkPoK_pol.verifyZKProof(zkProof, g1, g2, ipkElements, Z, B1, B2, pairing);
+//        if (proofValid) {
+//            System.out.println(verifierName + " 认证策略零知识证明验证成功");
+//        } else {
+//            System.out.println(verifierName + " 认证策略零知识证明验证失败");
+//        }
+//        endTime = System.currentTimeMillis();
+//        System.out.println(verifierName + " 认证策略验证时间: " + (endTime - startTime) + "毫秒");
     }
 
-    private static void publishToBlockchain(String description, Map<String, Object> elements) {
-//        System.out.println(description + ":");
-//        elements.forEach((key, value) -> {
-//            if (value instanceof Element[]) {
-//                Element[] array = (Element[]) value;
-//                for (int i = 0; i < array.length; i++) {
-//                    System.out.println(key + "[" + i + "] = " + array[i]);
-//                }
-//            } else {
-//                System.out.println(key + " = " + value);
-//            }
-//        });
+    private static void publishToBlockchain(String description, Element[] zkProof) {
+        // 模拟将证明发布到区块链
+//        System.out.println(description + " Proof has been published to the blockchain.");
     }
 }
