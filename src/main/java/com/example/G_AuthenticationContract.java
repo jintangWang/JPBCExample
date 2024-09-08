@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @Contract(name = "AuthenticationContract")
-public class F_AuthenticationContract implements ContractInterface {
+public class G_AuthenticationContract implements ContractInterface {
 
     private static final Map<String, Object> State = new HashMap<>();
     private static final Map<String, Object> Req = new HashMap<>();
@@ -28,7 +28,7 @@ public class F_AuthenticationContract implements ContractInterface {
     private static int T; // Credential Committee Members count
     private static Map<String, Object> params; // System parameters like pp, spk, etc.
 
-    private Element spk = B_SetupAlgorithm.getInstance().spk;
+    private Element spk = C_SetupAlgorithm.getInstance().spk;
 
 
     @Transaction

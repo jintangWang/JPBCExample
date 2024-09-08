@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.B_SetupAlgorithm.SetupParams;
+import com.example.C_SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.jpbc.Field;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class G_AuthenticationAlgorithm_Phase2 {
+public class H_AuthenticationAlgorithm_Phase2 {
 
     private static SetupParams setupParams;
     private static Pairing pairing;
@@ -19,13 +19,13 @@ public class G_AuthenticationAlgorithm_Phase2 {
 
     public static void main(String[] args) {
         // 初始化 SetupParams 和注册算法的公钥
-        setupParams = B_SetupAlgorithm.getInstance();
+        setupParams = C_SetupAlgorithm.getInstance();
         initializeSetupParams(setupParams);
 
         // 从 C_RegistrationAlgorithm 获取注册的公钥信息
-        C_RegistrationAlgorithm.main(null);  // 调用 RegistrationAlgorithm 注册实体
-        Map<String, Map<String, Element>> ipkMap = C_RegistrationAlgorithm.getIpkMap();
-        Element apk = C_RegistrationAlgorithm.getApk();
+        D_RegistrationAlgorithm.main(null);  // 调用 RegistrationAlgorithm 注册实体
+        Map<String, Map<String, Element>> ipkMap = D_RegistrationAlgorithm.getIpkMap();
+        Element apk = D_RegistrationAlgorithm.getApk();
 
         // 假设从 C_RegistrationAlgorithm 中获取的发行者信息
         int K_i = ipkMap.size();  // 使用的发行者数量

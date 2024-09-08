@@ -1,16 +1,14 @@
 package com.example;
 
 import it.unisa.dia.gas.jpbc.Element;
-import java.util.Map;
-import com.example.F_AuthenticationContract;
-import com.example.B_SetupAlgorithm.SetupParams;
+import com.example.C_SetupAlgorithm.SetupParams;
 
-public class G_AuthenticationAlgorithm_Phase3 {
+public class H_AuthenticationAlgorithm_Phase3 {
 
-    private F_AuthenticationContract contract;
+    private G_AuthenticationContract contract;
 
     // 构造函数传递智能合约实例
-    public G_AuthenticationAlgorithm_Phase3(F_AuthenticationContract contract) {
+    public H_AuthenticationAlgorithm_Phase3(G_AuthenticationContract contract) {
         this.contract = contract;
     }
 
@@ -34,7 +32,7 @@ public class G_AuthenticationAlgorithm_Phase3 {
         }
 
         // 从 B_SetupAlgorithm 中获取系统参数
-        SetupParams setupParams = B_SetupAlgorithm.getInstance();
+        SetupParams setupParams = C_SetupAlgorithm.getInstance();
         Element g1 = setupParams.g1;
         Element h = setupParams.g2;  // 使用 g2 作为 h 的占位符
         Element y = setupParams.spk;  // 假设 y 是从 spk 生成的

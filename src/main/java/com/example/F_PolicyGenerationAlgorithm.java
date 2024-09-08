@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.B_SetupAlgorithm.SetupParams;
+import com.example.C_SetupAlgorithm.SetupParams;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.jpbc.Field;
@@ -8,7 +8,7 @@ import it.unisa.dia.gas.jpbc.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-public class E_PolicyGenerationAlgorithm {
+public class F_PolicyGenerationAlgorithm {
 
     private static Pairing pairing;
     private static Field G1, G2, Zp;
@@ -18,12 +18,12 @@ public class E_PolicyGenerationAlgorithm {
 
     public static void main(String[] args) {
         // 初始化配对参数
-        SetupParams setupParams = B_SetupAlgorithm.getInstance();
+        SetupParams setupParams = C_SetupAlgorithm.getInstance();
 
-        D_CredentialIssuanceAlgorithm.main(null);  // 执行之前的发行凭证算法
+        E_CredentialIssuanceAlgorithm.main(null);  // 执行之前的发行凭证算法
         // 获取注册服务实体参数
-        ipkMap = C_RegistrationAlgorithm.getIpkMap();
-        apk = C_RegistrationAlgorithm.getApk();
+        ipkMap = D_RegistrationAlgorithm.getIpkMap();
+        apk = D_RegistrationAlgorithm.getApk();
 
         // 初始化其他参数
         initializeSetupParams(setupParams);

@@ -13,7 +13,7 @@ import java.security.SecureRandom;
 import java.util.List;
 
 @Contract(name = "AuthenticationContract")
-public class G_AuthenticationAlgorithm_Phase1 implements ContractInterface {
+public class H_AuthenticationAlgorithm_Phase1 implements ContractInterface {
 
     private static Pairing pairing; // Pairing instance for bilinear group operations
     private static Element g1, g2; // Generators for G1 and G2
@@ -21,7 +21,7 @@ public class G_AuthenticationAlgorithm_Phase1 implements ContractInterface {
     private static Field Zp; // Field Zp for random elements
     private static SecureRandom random;
 
-    public G_AuthenticationAlgorithm_Phase1() {
+    public H_AuthenticationAlgorithm_Phase1() {
         // Initialize bilinear groups and generators
         PairingFactory.getInstance().setUsePBCWhenPossible(true);
         pairing = PairingFactory.getPairing("params/a.properties"); // Path to pairing parameters
