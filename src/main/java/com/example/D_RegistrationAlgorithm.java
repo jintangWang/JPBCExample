@@ -14,6 +14,7 @@ public class D_RegistrationAlgorithm {
     private static Field G1, G2, Zp;
     private static Element g, g1, g2, eta;
     private static Map<String, Map<String, Element>> ipkMap = new HashMap<>();
+    private static Map<String, Map<String, Element>> privateKeyMap = new HashMap<>();  // 存储小写的私钥
     private static Element apk;
 
     public static void main(String[] args) {
@@ -65,6 +66,7 @@ public class D_RegistrationAlgorithm {
         Element Z1 = setupParams.g2.powZn(z1).getImmutable();
         Element Z2 = setupParams.g2.powZn(z2).getImmutable();
 
+        // 存储公钥
         Map<String, Element> ipk = new HashMap<>();
         ipk.put("X", X);
         ipk.put("Y1", Y1);
@@ -73,9 +75,17 @@ public class D_RegistrationAlgorithm {
         ipk.put("Z2", Z2);
         ipkMap.put(issuerName, ipk);  // 将所有公钥元素存储在 ipkMap 中
 
+        // 存储私钥
+        Map<String, Element> privateKey = new HashMap<>();
+        privateKey.put("x", x);
+        privateKey.put("y1", y1);
+        privateKey.put("y2", y2);
+        privateKey.put("z1", z1);
+        privateKey.put("z2", z2);
+        privateKeyMap.put(issuerName, privateKey);  // 存储小写私钥
+
         // 发布公钥
         publishToBlockchain(issuerName + " Public Key", ipk);
-
 
         endTime = System.currentTimeMillis();
         System.out.println(issuerName + " 注册时间: " + (endTime - startTime) + "毫秒");
@@ -98,10 +108,9 @@ public class D_RegistrationAlgorithm {
         System.out.println("证书审核员注册时间: " + (endTime - startTime) + "毫秒");
     }
 
-
     private static void publishToBlockchain(String description, Map<String, Element> elements) {
-//        System.out.println(description + ":");
-//        elements.forEach((key, value) -> System.out.println(key + " = " + value));
+        // System.out.println(description + ":");
+        // elements.forEach((key, value) -> System.out.println(key + " = " + value));
     }
 
     private static void publishZKProof(String description, SetupParams setupParams) {
@@ -121,9 +130,12 @@ public class D_RegistrationAlgorithm {
         // 上传到智能合约 do....
     }
 
-
     public static Map<String, Map<String, Element>> getIpkMap() {
         return ipkMap;
+    }
+
+    public static Map<String, Map<String, Element>> getPrivateKeyMap() {
+        return privateKeyMap;
     }
 
     public static Element getApk() {

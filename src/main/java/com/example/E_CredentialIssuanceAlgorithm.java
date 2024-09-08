@@ -14,6 +14,7 @@ public class E_CredentialIssuanceAlgorithm {
     private static Field G1, G2, Zp;
     private static Element g, g1, g2, alpha, eta;
     private static Map<String, Map<String, Element>> ipkMap;
+    private static Map<String, Map<String, Element>> privateKeyMap;
     private static Element apk;
 
     public static void main(String[] args) {
@@ -24,6 +25,7 @@ public class E_CredentialIssuanceAlgorithm {
         // 注册服务实体
         D_RegistrationAlgorithm.main(null);  // 调用 RegistrationAlgorithm 注册实体
         ipkMap = D_RegistrationAlgorithm.getIpkMap();
+        privateKeyMap = D_RegistrationAlgorithm.getPrivateKeyMap();  // 获取私钥映射
         apk = D_RegistrationAlgorithm.getApk();
 
         // 用户注册和凭证颁发
@@ -104,11 +106,28 @@ public class E_CredentialIssuanceAlgorithm {
             System.out.println("零知识证明验证成功");
         }
 
+        // 从 privateKeyMap 中获取 z1、z2、x、y1、y2
+        Map<String, Element> issuerPrivateKeys = privateKeyMap.get("CI1");  // 假设CI1是其中一个发行者
+        if (issuerPrivateKeys == null) {
+            System.out.println("issuerPrivateKeys is null");
+            return;
+        }
+        Element z1 = issuerPrivateKeys.get("z1");
+        Element z2 = issuerPrivateKeys.get("z2");
+        Element x = issuerPrivateKeys.get("x");
+        Element y1 = issuerPrivateKeys.get("y1");
+        Element y2 = issuerPrivateKeys.get("y2");
+
         // 生成凭证
         Element[] zkProofElements = (Element[]) requestData.get("upk");
         Element g1h = g1.powZn(h).getImmutable();
-        Element b = zkProofElements[0].powZn(rho2).mul(zkProofElements[1]).getImmutable();
-        Element s = g1h.powZn(rho1).mul(M1.powZn(rho2)).mul(M2.powZn(f_A_alpha)).getImmutable();
+
+        Element b = zkProofElements[0].powZn(z1).mul(zkProofElements[1].powZn(z2)).getImmutable();  // 正确计算 b
+
+        Element s = g1h.powZn(x)  // (g_1^h)^x
+                .mul(M1.powZn(y1))  // M1^y1
+                .mul(M2.powZn(y2))  // M2^y2
+                .getImmutable();    // 正确计算 s
 
         Map<String, Object> cred = new HashMap<>();
         cred.put("M", M);
@@ -125,9 +144,9 @@ public class E_CredentialIssuanceAlgorithm {
         Element[] sigma = (Element[]) cred.get("sigma");
         boolean credValid = verifyCredential(sigma, zkProofElements, M, N);
         if (credValid) {
-            System.out.println("凭证验证失败");
-        } else {
             System.out.println("凭证验证成功");
+        } else {
+            System.out.println("凭证验证失败");
         }
         endTime = System.currentTimeMillis();
         System.out.println("用户验证凭证时间: " + (endTime - startTime) + "毫秒");
