@@ -15,37 +15,41 @@ public class F_PolicyGenerationAlgorithm {
     private static Element g, g1, g2, eta;
     private static Map<String, Map<String, Element>> ipkMap;
     private static Element apk;
-    private static Element[] s_i; // 用于存储生成的 s_i
 
     public static void main(String[] args) {
         // 初始化配对参数
         SetupParams setupParams = C_SetupAlgorithm.getInstance();
 
-        E_CredentialIssuanceAlgorithm.main(null);  // 执行之前的发行凭证算法
-        // 获取注册服务实体参数
-        ipkMap = D_RegistrationAlgorithm.getIpkMap();
-        apk = D_RegistrationAlgorithm.getApk();
-
-        // 初始化其他参数
+        // 手动调用初始化参数
         initializeSetupParams(setupParams);
 
-        // 生成认证策略并生成零知识证明
-        s_i = generateAuthenticationPolicy("CV1");
+        // 执行生成认证策略并生成零知识证明
+        Element[] s_i = generateAuthenticationPolicy("CV1");
     }
 
-    private static void initializeSetupParams(SetupParams setupParams) {
+    // 初始化方法
+    public static void initializeSetupParams(SetupParams setupParams) {
         pairing = setupParams.pairing;
         G1 = setupParams.G1;
         G2 = setupParams.G2;
-        Zp = pairing.getZr();
+        Zp = pairing.getZr();  // 初始化 Zp
         g = setupParams.g;
         g1 = setupParams.g1;
         g2 = setupParams.g2;
         eta = setupParams.eta;
+        E_CredentialIssuanceAlgorithm.main(null);  // 执行之前的发行凭证算法
+        ipkMap = D_RegistrationAlgorithm.getIpkMap();  // 从注册算法获取 ipkMap
+        apk = D_RegistrationAlgorithm.getApk();  // 从注册算法获取 apk
     }
 
     // 生成认证策略并返回签名 s_i
     public static Element[] generateAuthenticationPolicy(String verifierName) {
+        // 如果参数未初始化，则初始化它们
+        if (Zp == null || pairing == null) {
+            SetupParams setupParams = C_SetupAlgorithm.getInstance();
+            initializeSetupParams(setupParams);
+        }
+
         long startTime, endTime;
 
         // 步骤1：生成认证策略密钥对
@@ -94,18 +98,12 @@ public class F_PolicyGenerationAlgorithm {
         Element Z = computeProductAndExponent(ipkElementsZ1, xj, kappa_i);  // 假设使用 Z1 进行计算
 
         // 将 Z, B1, B2 作为 s_i 返回
-        Element[] s_i_local = new Element[]{Z, B1, B2};
+        Element[] s_i = new Element[]{Z, B1, B2};
 
         // 输出计算时间
         endTime = System.currentTimeMillis();
         System.out.println(verifierName + " 认证策略生成时间: " + (endTime - startTime) + "毫秒");
 
-        // 返回签名 s_i
-        return s_i_local;
-    }
-
-    // 获取生成的 s_i
-    public static Element[] getSi() {
         return s_i;
     }
 
@@ -114,7 +112,7 @@ public class F_PolicyGenerationAlgorithm {
         Element result = ipkElements[0].getField().newOneElement();  // 确保 result 初始化为群元素的单位元
 
         for (int j = 0; j < ipkElements.length; j++) {
-            result = result.mul(ipkElements[j].powZn(xj[j]));  // 对群元素执行幂运算
+            result = result.mul(ipkElements[j].powZn(xj[j]));
         }
 
         result = result.powZn(kappa_i).getImmutable();  // 对整个乘积取 kappa_i 次幂
