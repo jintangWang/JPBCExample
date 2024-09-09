@@ -28,6 +28,8 @@ public class D_RegistrationAlgorithm {
         registerCredentialIssuer("CI1", setupParams);
         registerCredentialIssuer("CI2", setupParams);
         registerCredentialIssuer("CI3", setupParams);
+        registerCredentialIssuer("CI4", setupParams);
+        registerCredentialIssuer("CI5", setupParams);
 
         // 注册证书审核员
         registerCredentialAuditor(setupParams);

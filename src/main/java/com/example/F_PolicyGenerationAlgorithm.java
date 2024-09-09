@@ -57,42 +57,60 @@ public class F_PolicyGenerationAlgorithm {
         }
 
         Element kappa_i = Zp.newRandomElement().getImmutable();
-        Element Z = g.duplicate().powZn(kappa_i).getImmutable();
-        Element B1 = g1.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
-        Element B2 = g2.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
 
-        // 获取部分发行者的公钥
-        Map<String, Element> ipkSubset = new HashMap<>();
+        // 获取部分发行者的公钥，并确保对应关系
+        Element[] ipkElementsZ1 = new Element[Ki];  // 对应 Z1 的公钥部分
+        Element[] ipkElementsZ2 = new Element[Ki];  // 对应 Z2 的公钥部分
+        Element[] ipkElementsX = new Element[Ki];   // 对应 X 的公钥部分
+        Element[] ipkElementsY1 = new Element[Ki];  // 对应 Y1 的公钥部分
+        Element[] ipkElementsY2 = new Element[Ki];  // 对应 Y2 的公钥部分
+
         for (int i = 0; i < Ki; i++) {
             String issuerName = "CI" + (i + 1);
             if (ipkMap.containsKey(issuerName)) {
-                ipkSubset.putAll(ipkMap.get(issuerName));
+                Map<String, Element> issuerKeys = ipkMap.get(issuerName);
+                ipkElementsZ1[i] = issuerKeys.get("Z1");
+                ipkElementsZ2[i] = issuerKeys.get("Z2");
+                ipkElementsX[i] = issuerKeys.get("X");
+                ipkElementsY1[i] = issuerKeys.get("Y1");
+                ipkElementsY2[i] = issuerKeys.get("Y2");
             }
         }
 
-        Element[] ipkElements = ipkSubset.values().toArray(new Element[0]);
+        // 计算 Z1, Z2, X, Y1, Y2 的值
+        Element Z1 = computeProductAndExponent(ipkElementsZ1, xj, kappa_i);
+        Element Z2 = computeProductAndExponent(ipkElementsZ2, xj, kappa_i);
+        Element X = computeProductAndExponent(ipkElementsX, xj, kappa_i);
+        Element Y1 = computeProductAndExponent(ipkElementsY1, xj, kappa_i);
+        Element Y2 = computeProductAndExponent(ipkElementsY2, xj, kappa_i);
+
+        // B1 和 B2 计算
+        Element B1 = g1.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
+        Element B2 = g2.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
 
         // 生成并发布零知识证明
-        Element[] zkProof = ZkPoK_pol.generateZKProof(xj, kappa_i, g1, g2, ipkElements, Z, B1, B2, pairing);
+        Element[] zkProof = ZkPoK_pol.generateZKProof(xj, kappa_i, g1, g2, new Element[][]{{Z1}, {Z2}, {X}, {Y1}, {Y2}}, B1, B2, pairing);
         publishToBlockchain(verifierName + " Policy", zkProof);
 
         endTime = System.currentTimeMillis();
         System.out.println(verifierName + " 认证策略生成时间: " + (endTime - startTime) + "毫秒");
-
-        // 步骤2：验证零知识证明
-//        startTime = System.currentTimeMillis();
-//        boolean proofValid = ZkPoK_pol.verifyZKProof(zkProof, g1, g2, ipkElements, Z, B1, B2, pairing);
-//        if (proofValid) {
-//            System.out.println(verifierName + " 认证策略零知识证明验证成功");
-//        } else {
-//            System.out.println(verifierName + " 认证策略零知识证明验证失败");
-//        }
-//        endTime = System.currentTimeMillis();
-//        System.out.println(verifierName + " 认证策略验证时间: " + (endTime - startTime) + "毫秒");
     }
+
+    // 辅助函数：计算 Z1, Z2, X, Y1, Y2 的通用函数
+    private static Element computeProductAndExponent(Element[] ipkElements, Element[] xj, Element kappa_i) {
+        Element result = ipkElements[0].getField().newOneElement();  // 确保 result 初始化为群元素的单位元
+
+        for (int j = 0; j < ipkElements.length; j++) {
+            result = result.mul(ipkElements[j].powZn(xj[j]));  // 对群元素执行幂运算
+        }
+
+        result = result.powZn(kappa_i).getImmutable();  // 对整个乘积取 kappa_i 次幂
+        return result;
+    }
+
 
     private static void publishToBlockchain(String description, Element[] zkProof) {
         // 模拟将证明发布到区块链
-//        System.out.println(description + " Proof has been published to the blockchain.");
+        // System.out.println(description + " Proof has been published to the blockchain.");
     }
 }
