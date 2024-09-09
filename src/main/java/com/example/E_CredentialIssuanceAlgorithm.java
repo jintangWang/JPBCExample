@@ -16,6 +16,7 @@ public class E_CredentialIssuanceAlgorithm {
     private static Map<String, Map<String, Element>> ipkMap;
     private static Map<String, Map<String, Element>> privateKeyMap;
     private static Element apk;
+    private static Element b, s, g1h;  // 新增全局变量
 
     public static void main(String[] args) {
         // 初始化配对参数
@@ -58,7 +59,6 @@ public class E_CredentialIssuanceAlgorithm {
         // 构建aux
         String attributeSet = "attribute set";
         Element r = Zp.newRandomElement().getImmutable();
-        // C_{A_j} = H'(A_j || r)
         Element C_Aj = pairing.getG1().newElement()
                 .setFromHash((attributeSet + r.toString()).getBytes(), 0, (attributeSet + r.toString()).length())
                 .getImmutable();
@@ -90,14 +90,11 @@ public class E_CredentialIssuanceAlgorithm {
         requestData.put("M", M);
         requestData.put("N", N);
         requestData.put("zkProof", zkProof);
-        // 模拟发送数据到发行者
 
         endTime = System.currentTimeMillis();
         System.out.println("用户注册和凭证请求时间: " + (endTime - startTime) + "毫秒");
 
-        // 步骤2：发行者验证并生成凭证
-        startTime = System.currentTimeMillis();
-        // 假设发行者收到并验证了请求数据
+        // 发行者验证并生成凭证
         boolean proofValid = ZkPoK_CH.verifyZKProof(zkProof, g1, g2, h, f_A_alpha, pairing);
         if (!proofValid) {
             System.out.println("零知识证明验证失败");
@@ -120,36 +117,16 @@ public class E_CredentialIssuanceAlgorithm {
 
         // 生成凭证
         Element[] zkProofElements = (Element[]) requestData.get("upk");
-        Element g1h = g1.powZn(h).getImmutable();
-
-        Element b = zkProofElements[0].powZn(z1).mul(zkProofElements[1].powZn(z2)).getImmutable();  // 正确计算 b
-
-        Element s = g1h.powZn(x)  // (g_1^h)^x
+        g1h = g1.powZn(h).getImmutable();
+        b = zkProofElements[0].powZn(z1).mul(zkProofElements[1].powZn(z2)).getImmutable();  // 正确计算 b
+        s = g1h.powZn(x)  // (g_1^h)^x
                 .mul(M1.powZn(y1))  // M1^y1
                 .mul(M2.powZn(y2))  // M2^y2
                 .getImmutable();    // 正确计算 s
 
-        Map<String, Object> cred = new HashMap<>();
-        cred.put("M", M);
-        cred.put("N", N);
-        cred.put("upk", zkProofElements);
-        cred.put("sigma", new Element[]{g1h, b, s});
-
         // 将cred返回给用户并存储在本地数据库中
         endTime = System.currentTimeMillis();
         System.out.println("发行者生成和返回凭证时间: " + (endTime - startTime) + "毫秒");
-
-        // 用户验证凭证
-        startTime = System.currentTimeMillis();
-        Element[] sigma = (Element[]) cred.get("sigma");
-        boolean credValid = verifyCredential(sigma, zkProofElements, M, N);
-        if (credValid) {
-            System.out.println("凭证验证成功");
-        } else {
-            System.out.println("凭证验证失败");
-        }
-        endTime = System.currentTimeMillis();
-        System.out.println("用户验证凭证时间: " + (endTime - startTime) + "毫秒");
 
         exitTime = System.currentTimeMillis();
         System.out.println("用户注册和凭证分发算法成功完成。用户注册和凭证分发算法总时间为："+ (exitTime - originTime) + "毫秒");
@@ -167,41 +144,10 @@ public class E_CredentialIssuanceAlgorithm {
 
     private static void publishZKProof(String description, Element[] zkProof) {
         // 调用智能合约这里将零知识证明发布到区块链
-        // System.out.println(description + " Zero-Knowledge Proof: " + Arrays.toString(zkProof));
     }
 
-    private static boolean verifyCredential(Element[] sigma, Element[] upk, Element[] M, Element[] N) {
-        Element g1h = sigma[0];
-        Element b = sigma[1];
-        Element s = sigma[2];
-
-        // 假设ipkMap中存储的是发行者的公钥
-        Map<String, Element> issuerKeys = ipkMap.get("CI1");  // 假设CI1是其中一个发行者
-        if (issuerKeys == null) {
-            System.out.println("issuerKeys is null");
-            return false;
-        }
-        Element X = issuerKeys.get("X");
-        Element Y1 = issuerKeys.get("Y1");
-        Element Y2 = issuerKeys.get("Y2");
-        Element Z1 = issuerKeys.get("Z1");
-        Element Z2 = issuerKeys.get("Z2");
-
-        Element pairing1 = pairing.pairing(g1h, X);
-        Element pairing2 = pairing.pairing(M[0], Y1);
-        Element pairing3 = pairing.pairing(M[1], Y2);
-        Element pairing4 = pairing.pairing(s, g2);
-
-        boolean firstCheck = pairing1.mul(pairing2).mul(pairing3).isEqual(pairing4);
-
-        Element pairing5 = pairing.pairing(b, g2);
-        Element pairing6 = pairing.pairing(upk[0], Z1);
-        Element pairing7 = pairing.pairing(upk[1], Z2);
-
-        boolean secondCheck = pairing5.isEqual(pairing6.mul(pairing7));
-
-        boolean thirdCheck = pairing.pairing(upk[0], N[0]).isEqual(pairing.pairing(M[0], g2)) && pairing.pairing(upk[1], N[1]).isEqual(pairing.pairing(M[1], g2));
-
-        return firstCheck && secondCheck && thirdCheck;
+    // 获取生成的 b 和 s，用于认证算法
+    public static Element[] getCredential() {
+        return new Element[]{g1h, b, s};
     }
 }

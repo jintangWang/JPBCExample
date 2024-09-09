@@ -15,6 +15,7 @@ public class F_PolicyGenerationAlgorithm {
     private static Element g, g1, g2, eta;
     private static Map<String, Map<String, Element>> ipkMap;
     private static Element apk;
+    private static Element[] s_i; // 用于存储生成的 s_i
 
     public static void main(String[] args) {
         // 初始化配对参数
@@ -29,7 +30,7 @@ public class F_PolicyGenerationAlgorithm {
         initializeSetupParams(setupParams);
 
         // 生成认证策略并生成零知识证明
-        generateAuthenticationPolicy("CV1");
+        s_i = generateAuthenticationPolicy("CV1");
     }
 
     private static void initializeSetupParams(SetupParams setupParams) {
@@ -43,7 +44,8 @@ public class F_PolicyGenerationAlgorithm {
         eta = setupParams.eta;
     }
 
-    private static void generateAuthenticationPolicy(String verifierName) {
+    // 生成认证策略并返回签名 s_i
+    public static Element[] generateAuthenticationPolicy(String verifierName) {
         long startTime, endTime;
 
         // 步骤1：生成认证策略密钥对
@@ -88,12 +90,23 @@ public class F_PolicyGenerationAlgorithm {
         Element B1 = g1.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
         Element B2 = g2.powZn(Zp.newOneElement().div(kappa_i)).getImmutable();
 
-        // 生成并发布零知识证明
-        Element[] zkProof = ZkPoK_pol.generateZKProof(xj, kappa_i, g1, g2, new Element[][]{{Z1}, {Z2}, {X}, {Y1}, {Y2}}, B1, B2, pairing);
-        publishToBlockchain(verifierName + " Policy", zkProof);
+        // 生成 Z
+        Element Z = computeProductAndExponent(ipkElementsZ1, xj, kappa_i);  // 假设使用 Z1 进行计算
 
+        // 将 Z, B1, B2 作为 s_i 返回
+        Element[] s_i_local = new Element[]{Z, B1, B2};
+
+        // 输出计算时间
         endTime = System.currentTimeMillis();
         System.out.println(verifierName + " 认证策略生成时间: " + (endTime - startTime) + "毫秒");
+
+        // 返回签名 s_i
+        return s_i_local;
+    }
+
+    // 获取生成的 s_i
+    public static Element[] getSi() {
+        return s_i;
     }
 
     // 辅助函数：计算 Z1, Z2, X, Y1, Y2 的通用函数
@@ -107,7 +120,6 @@ public class F_PolicyGenerationAlgorithm {
         result = result.powZn(kappa_i).getImmutable();  // 对整个乘积取 kappa_i 次幂
         return result;
     }
-
 
     private static void publishToBlockchain(String description, Element[] zkProof) {
         // 模拟将证明发布到区块链

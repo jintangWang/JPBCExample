@@ -1,90 +1,110 @@
 package com.example;
 
+import com.example.C_SetupAlgorithm.SetupParams;
+import com.example.E_CredentialIssuanceAlgorithm;
+import com.example.F_PolicyGenerationAlgorithm;
 import it.unisa.dia.gas.jpbc.Element;
-import it.unisa.dia.gas.jpbc.Field;
 import it.unisa.dia.gas.jpbc.Pairing;
-import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
-import org.hyperledger.fabric.contract.Context;
-import org.hyperledger.fabric.contract.ContractInterface;
-import org.hyperledger.fabric.contract.annotation.Contract;
-import org.hyperledger.fabric.contract.annotation.Transaction;
 
-import java.security.SecureRandom;
-import java.util.List;
+public class H_AuthenticationAlgorithm_Phase1 {
 
-@Contract(name = "AuthenticationContract")
-public class H_AuthenticationAlgorithm_Phase1 implements ContractInterface {
+    private static Pairing pairing;
+    private static Element g1, h, b, g1h;
 
-    private static Pairing pairing; // Pairing instance for bilinear group operations
-    private static Element g1, g2; // Generators for G1 and G2
-    private static Element h; // Element used in signatures
-    private static Field Zp; // Field Zp for random elements
-    private static SecureRandom random;
+    public static void main(String[] args) {
+        // 初始化配对参数
+        SetupParams setupParams = C_SetupAlgorithm.getInstance();
+        initializeSetupParams(setupParams);
 
-    public H_AuthenticationAlgorithm_Phase1() {
-        // Initialize bilinear groups and generators
-        PairingFactory.getInstance().setUsePBCWhenPossible(true);
-        pairing = PairingFactory.getPairing("params/a.properties"); // Path to pairing parameters
-        g1 = pairing.getG1().newRandomElement();
-        g2 = pairing.getG2().newRandomElement();
-        Zp = pairing.getZr();
-        h = pairing.getG1().newRandomElement(); // h is a random element in G1
-        random = new SecureRandom();
+        // 从 E_CredentialIssuanceAlgorithm 获取 b
+        Element[] credential = E_CredentialIssuanceAlgorithm.getCredential();
+        g1h = credential[0];  // g_1^h
+        b = credential[1];    // b
+
+        // 运行认证算法
+        runAuthentication();
     }
 
-    @Transaction
-    public String AggregateAndBlindSignatures(List<Element> bList, List<Element> sList, int t) {
-        // Aggregating certificates from t credential issuers
-        Element b_aggregate = pairing.getG1().newOneElement(); // Start with identity element
-        Element s_aggregate = pairing.getG1().newOneElement();
-
-        for (int i = 0; i < t; i++) {
-            b_aggregate.mul(bList.get(i));
-            s_aggregate.mul(sList.get(i));
-        }
-
-        // Blind the aggregated signature
-        Element epsilon = Zp.newRandomElement();
-        Element b_blinded = b_aggregate.powZn(epsilon);
-        Element s_blinded = s_aggregate.powZn(epsilon);
-
-        // Prepare blind signature
-        Element g1_h = g1.powZn(h); // Compute g1^h
-        Element sigma_prime_1 = g1_h; // g1^h
-        Element sigma_prime_2 = b_blinded; // b^epsilon
-        Element sigma_prime_3 = s_blinded; // s^epsilon
-
-        return sigma_prime_1.toString() + "," + sigma_prime_2.toString() + "," + sigma_prime_3.toString();
+    // 初始化从 C_SetupAlgorithm 获取的参数
+    private static void initializeSetupParams(SetupParams setupParams) {
+        pairing = setupParams.pairing;
+        g1 = setupParams.g1;
+        h = setupParams.h;
     }
 
-    @Transaction
-    public boolean VerifyZKPoK(Context ctx, String aid, String sigmaPrime, String piSigmaPrime, List<Element> MList, List<Element> NList, List<Element> TList, List<Element> XList, List<Element> YList, List<Element> ZList) {
-        System.out.println("VerifyZKPoK: Verifying zero-knowledge proof of knowledge.");
+    private static void runAuthentication() {
+        // 从 F_PolicyGenerationAlgorithm 中获取 s_i
+        Element[] s_i = F_PolicyGenerationAlgorithm.generateAuthenticationPolicy("CV1");
 
-        // Parse sigmaPrime
-        String[] sigmaParts = sigmaPrime.split(",");
-        Element sigma_prime_1 = pairing.getG1().newElementFromBytes(sigmaParts[0].getBytes());
-        Element sigma_prime_2 = pairing.getG1().newElementFromBytes(sigmaParts[1].getBytes());
-        Element sigma_prime_3 = pairing.getG1().newElementFromBytes(sigmaParts[2].getBytes());
+        // 生成 s = ∏ s_i
+        Element s = generateAggregateS(s_i);
 
-        // Verify proof piSigmaPrime (simplified)
-        // Zero-knowledge proof verification consists of several pairing operations and checks
-        // We simulate zk-proof checks here
+        // 随机生成 epsilon
+        Element epsilon = pairing.getZr().newRandomElement().getImmutable();
 
-        boolean proofValid = zkProofVerification(sigma_prime_1, sigma_prime_2, sigma_prime_3, MList, NList, TList, XList, YList, ZList);
-        if (proofValid) {
-            System.out.println("VerifyZKPoK: Proof verification succeeded, access granted.");
-            return true; // Access granted
+        // Blinding aggregate signature into σ'
+        Element b_epsilon = b.powZn(epsilon).getImmutable();
+        Element s_epsilon = s.powZn(epsilon).getImmutable();
+        Element sigma_prime_g1h = g1h;  // g_1^h remains unchanged
+
+        // 生成非交互零知识证明 π_sigma'
+        Element[] zkProof = generateZKProof(sigma_prime_g1h, b_epsilon, s_epsilon, s_i, epsilon);
+
+        // 验证零知识证明
+        boolean isProofValid = verifyZKProof(sigma_prime_g1h, b_epsilon, s_epsilon, zkProof, s_i);
+        if (isProofValid) {
+            System.out.println("认证成功，用户拥有有效的凭证。");
         } else {
-            System.out.println("VerifyZKPoK: Proof verification failed, access denied.");
-            return false; // Access denied
+            System.out.println("认证失败，零知识证明验证不通过。");
         }
     }
 
-    // Simulated zk-proof verification logic (Placeholder)
-    private boolean zkProofVerification(Element sigmaPrime1, Element sigmaPrime2, Element sigmaPrime3, List<Element> MList, List<Element> NList, List<Element> TList, List<Element> XList, List<Element> YList, List<Element> ZList) {
-        // This function would normally involve multiple pairing checks.
-        // For this example, we will simulate it with a placeholder that always returns true.
-        return true;
+    // 根据 s_i 生成聚合签名 s = ∏ s_i
+    private static Element generateAggregateS(Element[] s_i) {
+        Element s = pairing.getG1().newOneElement();  // 初始化 s 为 G1 中的单位元
+
+        for (Element s_elem : s_i) {
+            s = s.mul(s_elem).getImmutable();  // 累乘所有 s_i
+        }
+        return s;
+    }
+
+    // 生成非交互零知识证明 π_sigma'
+    private static Element[] generateZKProof(Element g1h, Element b_epsilon, Element s_epsilon, Element[] s_i, Element epsilon) {
+        Element[] proof = new Element[3 + s_i.length];
+        proof[0] = g1h;
+        proof[1] = b_epsilon;
+        proof[2] = s_epsilon;
+
+        // 将 s_i 和 epsilon 放入证明
+        for (int i = 0; i < s_i.length; i++) {
+            proof[3 + i] = s_i[i];
+        }
+
+        return proof;
+    }
+
+    // 验证零知识证明 π_sigma'
+    private static boolean verifyZKProof(Element g1h, Element b_epsilon, Element s_epsilon, Element[] zkProof, Element[] s_i) {
+        // 根据论文中的公式进行验证
+        Element g2 = C_SetupAlgorithm.getInstance().g2;  // 获取 g2
+        Element Z = s_i[0];  // Z 来自 s_i
+        Element B1 = s_i[1]; // B1 来自 s_i
+        Element B2 = s_i[2]; // B2 来自 s_i
+
+        // 验证第一个条件 e(T_j, N_ij) = e(M_ij, g_2) (这里可以简化，因为 T_j 和 N_ij 是两两匹配的)
+        // 第二个条件 e(g1^h, X_ij^epsilon) * e(M_ij, Y_ij) = e(s^epsilon, g_2)
+        Element leftSide = pairing.pairing(g1h, B1).mul(pairing.pairing(b_epsilon, B2));
+        Element rightSide = pairing.pairing(s_epsilon, g2);
+
+        boolean isFirstCheckValid = leftSide.isEqual(rightSide);
+
+        // 验证 e(b^epsilon, g_2) = e(T_j, Z_ij)
+        Element secondLeftSide = pairing.pairing(b_epsilon, g2);
+        Element secondRightSide = pairing.pairing(g1h, Z); // 假设 g1h 与 Z 匹配
+
+        boolean isSecondCheckValid = secondLeftSide.isEqual(secondRightSide);
+
+        return isFirstCheckValid && isSecondCheckValid;
     }
 }
