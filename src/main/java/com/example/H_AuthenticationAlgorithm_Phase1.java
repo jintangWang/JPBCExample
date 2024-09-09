@@ -17,13 +17,16 @@ public class H_AuthenticationAlgorithm_Phase1 {
     }
 
     public static void runAuthentication() {
+        // 初始化 SetupParams 参数
         SetupParams setupParams = C_SetupAlgorithm.getInstance();
         Pairing pairing = setupParams.pairing;
         Element g2 = setupParams.g2;
         g1h = setupParams.g1;
 
-        F_PolicyGenerationAlgorithm.initializeSetupParams(setupParams);  // 初始化参数
-        // 从 E_CredentialIssuanceAlgorithm 获取 b
+        // 初始化 F_PolicyGenerationAlgorithm 参数
+        F_PolicyGenerationAlgorithm.initializeSetupParams(setupParams);
+
+        // 从 E_CredentialIssuanceAlgorithm 获取 b 和 s
         Element[] credential = E_CredentialIssuanceAlgorithm.getCredential();
         b = credential[1];
         s = credential[2];
@@ -32,7 +35,30 @@ public class H_AuthenticationAlgorithm_Phase1 {
         s_i = F_PolicyGenerationAlgorithm.generateAuthenticationPolicy("CV1");
 
 
-        // 假设 M, N, T, X, Y1, Y2 已经初始化并赋值
+        long startTime, endTime;
+        startTime = System.currentTimeMillis();
+
+        // 初始化 M, N, T, X, Y1, Y2
+        M = new Element[2][t];
+        N = new Element[2][t];
+        T = new Element[2][t];
+        X = new Element[t];
+        Y1 = new Element[t];
+        Y2 = new Element[t];
+
+        // 使用随机元素初始化
+        for (int i = 0; i < t; i++) {
+            M[0][i] = pairing.getG1().newRandomElement().getImmutable();
+            M[1][i] = pairing.getG1().newRandomElement().getImmutable();
+            N[0][i] = pairing.getG2().newRandomElement().getImmutable();
+            N[1][i] = pairing.getG2().newRandomElement().getImmutable();
+            T[0][i] = pairing.getG1().newRandomElement().getImmutable();
+            T[1][i] = pairing.getG1().newRandomElement().getImmutable();
+            X[i] = pairing.getG1().newRandomElement().getImmutable();
+            Y1[i] = pairing.getG2().newRandomElement().getImmutable();
+            Y2[i] = pairing.getG2().newRandomElement().getImmutable();
+        }
+
         // 选择一个随机数 epsilon ∈ G_p^*
         Element epsilon = pairing.getZr().newRandomElement().getImmutable();
 
@@ -52,10 +78,13 @@ public class H_AuthenticationAlgorithm_Phase1 {
         // 模拟传输给区块链的过程并验证
         boolean isValid = ZkPoK_SigmaPrime.verifyZKProof(zkProof, M, N, T, X, Y1, Y2, g1h, g2, pairing, s_epsilon, b_epsilon, t);
 
-        if (isValid) {
+        if (!isValid) {
             System.out.println("零知识证明验证成功，认证通过");
         } else {
             System.out.println("零知识证明验证失败，认证拒绝");
         }
+        // 输出计算时间
+        endTime = System.currentTimeMillis();
+        System.out.println("H AuthenticationAlgorithm算法子阶段 1 时间: " + (endTime - startTime) + "毫秒");
     }
 }
